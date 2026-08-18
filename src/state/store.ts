@@ -4,6 +4,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { DEFAULT_UNIVERSE } from '../data/universes';
 import type { Timeframe, UniverseId } from '../data/types';
+import {
+  DEFAULT_DESTINATION,
+  type DestinationId,
+} from '../links/destinations';
 import type { Palette } from '../treemap/color';
 
 interface Preferences {
@@ -16,6 +20,8 @@ interface Preferences {
   colorCap: number;
   /** Haptic feedback on tile selection. */
   haptics: boolean;
+  /** Which app "Open" sends a tapped ticker to. */
+  tickerDestination: DestinationId;
   watchlist: string[];
 }
 
@@ -26,6 +32,7 @@ interface Store extends Preferences {
   setSnapColors: (snap: boolean) => void;
   setColorCap: (cap: number) => void;
   setHaptics: (enabled: boolean) => void;
+  setTickerDestination: (destination: DestinationId) => void;
   toggleWatch: (symbol: string) => void;
   isWatched: (symbol: string) => boolean;
 }
@@ -39,6 +46,7 @@ export const usePreferences = create<Store>()(
       snapColors: false,
       colorCap: 3,
       haptics: true,
+      tickerDestination: DEFAULT_DESTINATION,
       watchlist: [],
 
       setUniverse: (universe) => set({ universe }),
@@ -47,6 +55,7 @@ export const usePreferences = create<Store>()(
       setSnapColors: (snapColors) => set({ snapColors }),
       setColorCap: (colorCap) => set({ colorCap }),
       setHaptics: (haptics) => set({ haptics }),
+      setTickerDestination: (tickerDestination) => set({ tickerDestination }),
 
       toggleWatch: (symbol) => {
         const list = get().watchlist;

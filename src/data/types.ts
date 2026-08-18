@@ -44,6 +44,8 @@ export interface Quote {
   /** Percent change over the requested timeframe. 2.5 means +2.5%. */
   changePct: number;
   volume?: number;
+  /** Listing venue, e.g. "NASDAQ". Used to build exchange-qualified links. */
+  exchange?: string;
 }
 
 export interface MarketSnapshot {

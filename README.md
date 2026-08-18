@@ -57,6 +57,10 @@ src/components/
   TickerSheet.tsx        tap-a-tile detail sheet
   Legend.tsx             colour key
 
+src/links/
+  destinations.ts        where a ticker can open, and URL rules (pure)
+  openTicker.ts          Linking/Share side
+
 src/billing/entitlement.ts   RevenueCat wrapper
 
 server/                  Cloudflare Worker: vendor key + real paywall
@@ -69,6 +73,34 @@ Gestures only mutate a transform on the Skia group, so squarify never runs
 during a pinch. Labels are culled by their **on-screen** size, so a tile
 that is 8px wide draws no text at 1× and draws its symbol and change at 4×.
 That is both the performance strategy and the core UX affordance.
+
+### Opening a ticker elsewhere
+
+Tapping a tile opens the detail sheet; its Open button hands the symbol to
+whichever app the user picked in Settings. Two mechanisms, and the
+difference decides how reliable each destination is:
+
+- **Universal / App Links (https)** — the dependable path. The OS routes
+  the URL to the destination app when it is installed and claims the
+  domain, and to the browser when it is not. Nothing to declare, and it
+  never dead-ends. Yahoo Finance, TradingView, Robinhood, MarketWatch and
+  Google Finance all work this way.
+- **Custom schemes (`app://`)** — only where the target publishes one, and
+  on iOS every scheme passed to `canOpenURL` must also appear in
+  `LSApplicationQueriesSchemes` or the probe reports "not installed" even
+  when it is.
+
+**Apple Stocks is the awkward one.** Apple publishes no URL scheme for it —
+it is absent from Apple's own documentation, and the `stocks://` forms that
+circulate are unverified. The app tries them and falls through to a web
+destination, so the button always does something, but do not promise
+"opens in Apple Stocks" in store copy. The share sheet is the honest
+universal escape hatch, and it reaches apps this list has never heard of.
+
+Symbol normalisation is not cosmetic: our data uses `BRK.B`, Yahoo wants
+`BRK-B`, and Google needs `BRK.B:NYSE`. Getting it wrong opens a different
+company's page, so `destinations.ts` is pure and directly unit-tested,
+including the several spellings vendors use for one exchange.
 
 ### The paywall is server-side
 
@@ -103,13 +135,14 @@ Expo Go, and the map shows a clear message instead of white-screening.
 ### Tests
 
 ```bash
-npm test           # 32 tests over the layout and colour logic
+npm test           # 55 tests over the layout, colour and link logic
 ```
 
 The treemap and colour modules are pure TypeScript with no React or native
 imports, which is why they are directly testable. Coverage includes area
 proportionality, non-overlap, containment, aspect-ratio quality,
-cap-weighted sector aggregation, hit testing, and palette luminance parity.
+cap-weighted sector aggregation, hit testing, palette luminance parity, and
+per-destination symbol and exchange normalisation.
 
 ### Connecting real data
 
@@ -196,6 +229,8 @@ Not built yet, roughly in value order:
 - ETF, crypto and world universes — the adapter and picker already model
   them; each needs a constituent source wired into the worker
 - Price alerts (push via Expo Notifications, evaluated in the worker cron)
+- Broker deep links beyond the read-only destinations, which is also where
+  affiliate revenue would sit — note that referral links need disclosure
 - Long-press a sector to zoom it full-screen
 - Sparklines in the detail sheet
 - Home-screen widget showing your watchlist heat

@@ -325,8 +325,20 @@
   .statcell { width: 50%; padding: 8px 0; }
   .statcell u { text-decoration: none; display: block; font-size: 11px; color: var(--app-muted); }
   .statcell b { display: block; font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .sheet-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .sheet-primary {
+    flex: 1; height: 48px; border-radius: 12px;
+    background: var(--app-accent); color: #fff;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 15px; font-weight: 700;
+  }
+  .sheet-secondary {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--app-raised); color: var(--app-text);
+    display: grid; place-items: center;
+  }
   .done {
-    margin-top: 16px; height: 48px; border-radius: 12px;
+    margin-top: 8px; height: 48px; border-radius: 12px;
     background: var(--app-raised); display: grid; place-items: center;
     font-size: 15px; font-weight: 600;
   }
@@ -580,6 +592,15 @@
                   <span class="statcell"><u>Market cap</u><b>$3.00T</b></span>
                   <span class="statcell"><u>Volume</u><b>28.4M</b></span>
                 </div>
+                <div class="sheet-actions">
+                  <span class="sheet-primary">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg>
+                    Open in Yahoo Finance
+                  </span>
+                  <span class="sheet-secondary">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4M4 14v5a1 1 0 001 1h14a1 1 0 001-1v-5"/></svg>
+                  </span>
+                </div>
                 <div class="done">Done</div>
               </div>
             </div>
@@ -588,7 +609,8 @@
         <div class="caption">
           <h3>Tap a tile</h3>
           <p>A sheet, not a route push — dismissing returns you to the exact zoom and pan
-             you were scanning from. The star adds it to your watchlist.</p>
+             you were scanning from. Open hands the symbol to whichever app you picked
+             in Settings; the share button reaches everything else.</p>
         </div>
       </div>
 
@@ -687,10 +709,13 @@
                 <div class="set-hint">Off blends between them for smoother small tiles.</div>
               </div>
 
-              <div class="set-label">INTERACTION</div>
+              <div class="set-label">OPEN TICKERS IN</div>
               <div class="set-card">
-                <div class="set-row"><span>Haptic feedback</span><span class="swtch"></span></div>
-                <div class="set-hint">A tick when you select a tile.</div>
+                <div class="set-row"><span>Yahoo Finance</span><span style="color:var(--app-accent)">✓</span></div>
+                <div class="set-row"><span>Apple Stocks</span></div>
+                <div class="set-hint">Apple publishes no deep link for Stocks. We try, then fall back to Yahoo Finance.</div>
+                <div class="set-row"><span>TradingView</span></div>
+                <div class="set-row"><span>Robinhood</span></div>
               </div>
 
               <span style="flex:1"></span>

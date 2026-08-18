@@ -58,6 +58,7 @@ interface Quote {
   price: number;
   changePct: number;
   volume?: number;
+  exchange?: string;
 }
 
 interface Snapshot {
@@ -167,6 +168,7 @@ async function buildSnapshot(
           changesPercentage?: number;
           marketCap?: number;
           volume?: number;
+          exchange?: string;
         }[]
       >(`/v3/quote/${batch.join(',')}`, env)
     )
@@ -209,6 +211,7 @@ async function buildSnapshot(
       price: quote.price ?? 0,
       changePct,
       volume: quote.volume,
+      exchange: quote.exchange,
     });
   }
 

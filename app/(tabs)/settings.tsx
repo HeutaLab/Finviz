@@ -18,6 +18,7 @@ import {
   useEntitlement,
 } from '../../src/billing/entitlement';
 import { clearCache } from '../../src/data/cache';
+import { availableDestinations } from '../../src/links/openTicker';
 import { usePreferences } from '../../src/state/store';
 import { legendSwatches } from '../../src/treemap/color';
 import { theme } from '../../src/theme';
@@ -37,6 +38,8 @@ export default function SettingsScreen() {
     snapColors,
     colorCap,
     haptics,
+    tickerDestination,
+    setTickerDestination,
     setPalette,
     setSnapColors,
     setColorCap,
@@ -147,6 +150,36 @@ export default function SettingsScreen() {
           onChange={setHaptics}
         />
       </Section>
+
+      <Section title="Open tickers in">
+        {availableDestinations().map((destination) => {
+          const active = destination.id === tickerDestination;
+          return (
+            <View key={destination.id}>
+              <Pressable
+                onPress={() => setTickerDestination(destination.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
+              >
+                <Text style={styles.rowLabel}>{destination.label}</Text>
+                {active ? (
+                  <Ionicons name="checkmark" size={18} color={theme.accent} />
+                ) : null}
+              </Pressable>
+              {destination.note ? (
+                <Text style={styles.hint}>{destination.note}</Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </Section>
+
+      <Text style={styles.hint}>
+        Tapping a tile opens a detail sheet; the Open button there sends the
+        symbol to your choice above. Apps that claim their own web address
+        take over automatically — otherwise it opens in the browser.
+      </Text>
 
       <Section title="Account">
         <LinkRow

@@ -32,6 +32,10 @@ const config: ExpoConfig = {
         'UIInterfaceOrientationLandscapeLeft',
         'UIInterfaceOrientationLandscapeRight',
       ],
+      // Required for Linking.canOpenURL: on iOS an undeclared scheme reads
+      // as "not installed" even when the app is present. Only custom schemes
+      // need listing — the https destinations route themselves.
+      LSApplicationQueriesSchemes: ['stocks', 'tradingview'],
     },
   },
 

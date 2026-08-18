@@ -44,6 +44,7 @@ interface FmpQuote {
   changesPercentage?: number;
   marketCap?: number;
   volume?: number;
+  exchange?: string;
 }
 
 interface FmpPriceChange {
@@ -208,6 +209,7 @@ export class FmpProvider implements MarketDataProvider {
         price: quote.price ?? 0,
         changePct,
         volume: quote.volume,
+        exchange: quote.exchange,
       });
     }
 

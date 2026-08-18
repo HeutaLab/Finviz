@@ -1,9 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Quote, Timeframe } from '../data/types';
+import {
+  destinationById,
+  openTicker,
+  shareTicker,
+} from '../links/openTicker';
 import { usePreferences } from '../state/store';
 import { performanceColor } from '../treemap/color';
 import { theme } from '../theme';
@@ -38,9 +43,39 @@ function formatVolume(value?: number): string {
  */
 export function TickerSheet({ quote, timeframe, onClose }: Props) {
   const insets = useSafeAreaInsets();
-  const { palette, colorCap, snapColors, watchlist, toggleWatch } = usePreferences();
+  const {
+    palette,
+    colorCap,
+    snapColors,
+    watchlist,
+    toggleWatch,
+    tickerDestination,
+  } = usePreferences();
+
+  const onOpenExternal = useCallback(async () => {
+    if (!quote) return;
+    const result = await openTicker(
+      quote.symbol,
+      tickerDestination,
+      quote.exchange
+    );
+    if (result.status === 'failed') {
+      Alert.alert('Could not open', result.reason);
+    }
+  }, [quote, tickerDestination]);
+
+  const onShare = useCallback(async () => {
+    if (!quote) return;
+    try {
+      await shareTicker(quote.symbol, quote.name, quote.changePct);
+    } catch {
+      // A dismissed share sheet rejects on some platforms; nothing to report.
+    }
+  }, [quote]);
 
   if (!quote) return null;
+
+  const destination = destinationById(tickerDestination);
 
   const watched = watchlist.includes(quote.symbol);
   const color = performanceColor(quote.changePct, {
@@ -104,6 +139,27 @@ export function TickerSheet({ quote, timeframe, onClose }: Props) {
           />
           <Stat label="Market cap" value={formatCap(quote.marketCap)} />
           <Stat label="Volume" value={formatVolume(quote.volume)} />
+        </View>
+
+        <View style={styles.actions}>
+          <Pressable
+            onPress={onOpenExternal}
+            accessibilityRole="link"
+            accessibilityLabel={`Open ${quote.symbol} in ${destination.label}`}
+            style={({ pressed }) => [styles.primary, pressed && { opacity: 0.75 }]}
+          >
+            <Ionicons name="open-outline" size={16} color="#fff" />
+            <Text style={styles.primaryText}>Open in {destination.label}</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={onShare}
+            accessibilityRole="button"
+            accessibilityLabel={`Share ${quote.symbol}`}
+            style={({ pressed }) => [styles.secondary, pressed && { opacity: 0.7 }]}
+          >
+            <Ionicons name="share-outline" size={18} color={theme.text} />
+          </Pressable>
         </View>
 
         <Pressable
@@ -196,8 +252,32 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontVariant: ['tabular-nums'],
   },
+  actions: {
+    flexDirection: 'row',
+    gap: theme.space(2),
+    marginTop: theme.space(5),
+  },
+  primary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.space(2),
+    height: 48,
+    borderRadius: theme.radius,
+    backgroundColor: theme.accent,
+  },
+  primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  secondary: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.radius,
+    backgroundColor: theme.surfaceRaised,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   close: {
-    marginTop: theme.space(4),
+    marginTop: theme.space(2),
     height: 48,
     borderRadius: theme.radius,
     backgroundColor: theme.surfaceRaised,

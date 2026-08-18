@@ -148,6 +148,21 @@ const SEEDS: Seed[] = [
   { symbol: 'NEM', name: 'Newmont', sector: 'Basic Materials', industry: 'Gold', cap: 50 },
 ];
 
+/**
+ * Listing venue per symbol. Only the NASDAQ names are enumerated; the rest
+ * of the seed list is NYSE, which is accurate for this set.
+ */
+const NASDAQ = new Set([
+  'AAPL', 'MSFT', 'NVDA', 'AVGO', 'AMD', 'ADBE', 'CSCO', 'QCOM', 'TXN',
+  'INTU', 'AMAT', 'MU', 'LRCX', 'PANW', 'INTC', 'GOOGL', 'META', 'NFLX',
+  'CMCSA', 'TMUS', 'EA', 'AMZN', 'TSLA', 'BKNG', 'SBUX', 'COST', 'MDLZ',
+  'PEP', 'AMGN', 'ISRG', 'REGN', 'HON', 'GILD',
+]);
+
+function exchangeFor(symbol: string): string {
+  return NASDAQ.has(symbol) ? 'NASDAQ' : 'NYSE';
+}
+
 /** Mulberry32 — small, fast, and deterministic for a given seed. */
 function makeRandom(seed: number): () => number {
   let a = seed >>> 0;
@@ -224,6 +239,7 @@ export class MockProvider implements MarketDataProvider {
         price: Number(price.toFixed(2)),
         changePct: Number(changePct.toFixed(2)),
         volume: Math.round(1e6 + rand() * 4e7),
+        exchange: exchangeFor(seed.symbol),
       };
     });
 
