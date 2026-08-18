@@ -1,0 +1,653 @@
+<title>Nuclear Sub Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground: #f4f7fb;
+    --surface: #ffffff;
+    --surface-2: #eef2f8;
+    --border: #dce3ee;
+    --border-strong: #c3cddd;
+    --text: #131822;
+    --muted: #5a6478;
+    --faint: #8c96a8;
+    --accent: #2f6fe0;
+    --accent-soft: rgba(47, 111, 224, 0.09);
+    --shadow: 0 1px 2px rgba(19,24,34,.05), 0 10px 28px rgba(19,24,34,.07);
+
+    /* Status palette — fixed, never themed. Always paired with a label. */
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1017;
+      --surface: #151b26;
+      --surface-2: #1b2231;
+      --border: #262f40;
+      --border-strong: #38445a;
+      --text: #e6ebf4;
+      --muted: #8892a6;
+      --faint: #6b7488;
+      --accent: #6fa4ff;
+      --accent-soft: rgba(111,164,255,.12);
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 36px rgba(0,0,0,.32);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0d1017;
+    --surface: #151b26;
+    --surface-2: #1b2231;
+    --border: #262f40;
+    --border-strong: #38445a;
+    --text: #e6ebf4;
+    --muted: #8892a6;
+    --faint: #6b7488;
+    --accent: #6fa4ff;
+    --accent-soft: rgba(111,164,255,.12);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 36px rgba(0,0,0,.32);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: clamp(32px,6vw,68px) clamp(18px,4vw,40px) 96px; }
+
+  h1, h2, h3, h4 {
+    font-family: Archivo, ui-sans-serif, system-ui, sans-serif;
+    margin: 0; letter-spacing: -.02em; text-wrap: balance;
+  }
+  h1 { font-size: clamp(2.2rem,5.5vw,3.5rem); font-weight: 800; line-height: 1.04; }
+  h2 { font-size: clamp(1.4rem,2.8vw,1.9rem); font-weight: 700; line-height: 1.18; }
+  h3 { font-size: 1.08rem; font-weight: 700; }
+  h4 { font-size: .95rem; font-weight: 700; }
+  p { margin: 0; max-width: var(--measure); }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .lede { font-size: clamp(1.02rem,1.5vw,1.16rem); color: var(--muted); }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  section { margin-top: clamp(52px,7vw,92px); }
+  .head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 22px;
+  }
+
+  /* ---------- Chart ---------- */
+  .viz-root {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: clamp(18px,3vw,28px);
+  }
+  .viz-title { font-family: Archivo, sans-serif; font-weight: 700; font-size: 1.05rem; }
+  .viz-sub { color: var(--muted); font-size: .86rem; margin-top: 4px; max-width: 60ch; }
+
+  .chart { margin-top: 24px; position: relative; padding-top: 22px; }
+  .row { display: grid; grid-template-columns: minmax(120px, 180px) 1fr; gap: 14px; align-items: center; padding: 7px 0; }
+  .row-label { font-size: .84rem; font-weight: 600; text-align: right; line-height: 1.3; }
+  .row-label small { display: block; font-weight: 400; color: var(--faint); font-size: .74rem; }
+  .track { position: relative; height: 30px; }
+  .bar {
+    position: absolute; top: 6px; height: 18px;
+    border-radius: 4px; min-width: 4px;
+  }
+  .bar-note {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: .76rem; font-weight: 600; white-space: nowrap;
+    font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums;
+  }
+  .verdict {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: "IBM Plex Sans", sans-serif; font-weight: 600;
+    font-size: .72rem; letter-spacing: .01em;
+  }
+  .dotmark { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+  .threshold {
+    position: absolute; top: 20px; bottom: 30px; width: 2px;
+    background: var(--text); opacity: .5;
+  }
+  /* Labelled above the plot: below it, this ran straight into the $0 tick. */
+  .threshold::after {
+    content: "break-even $1.70";
+    position: absolute; top: -18px; left: -2px;
+    font-family: "IBM Plex Mono", monospace; font-size: .68rem;
+    color: var(--muted); white-space: nowrap;
+  }
+  .axis {
+    display: flex; justify-content: space-between;
+    margin-top: 14px; padding-left: min(194px, 42%);
+    font-family: "IBM Plex Mono", monospace; font-size: .7rem; color: var(--faint);
+  }
+  /* Narrow screens: the absolutely-positioned value labels have nowhere to
+     go beside a ~200px track, so stack them under the bar instead. */
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; gap: 4px; padding: 12px 0; }
+    .row-label { text-align: left; }
+    .row-label small { display: inline; margin-left: 6px; }
+    .track { height: 22px; }
+    .bar { top: 2px; }
+    .bar-note {
+      position: static; transform: none;
+      display: block; margin-top: 4px;
+    }
+    .threshold { display: none; }
+    .axis { padding-left: 0; }
+  }
+
+  .viz-foot { margin-top: 18px; font-size: .76rem; color: var(--faint); line-height: 1.5; max-width: 72ch; }
+
+  .table-toggle {
+    margin-top: 14px; font: inherit; font-size: .78rem; font-weight: 600;
+    background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .table-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+  .datatable { margin-top: 14px; overflow-x: auto; }
+  .datatable table { border-collapse: collapse; font-size: .82rem; width: 100%; }
+  .datatable th, .datatable td { text-align: left; padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border); }
+  .datatable th { color: var(--muted); font-weight: 600; }
+  .datatable td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Lanes ---------- */
+  .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 16px; }
+  .lane { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .lane.pick { border-color: var(--accent); box-shadow: var(--shadow); }
+  .lane-price { font-family: Archivo, sans-serif; font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; }
+  .lane p { font-size: .87rem; color: var(--muted); line-height: 1.5; }
+  .tag {
+    align-self: flex-start; font-size: .66rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 3px 7px; border-radius: 4px;
+    background: var(--accent); color: #fff;
+  }
+
+  /* ---------- Phases ---------- */
+  .phase {
+    display: grid; grid-template-columns: 54px 1fr; gap: clamp(14px,3vw,26px);
+    padding-bottom: 34px; position: relative;
+  }
+  .phase:not(:last-child)::before {
+    content: ""; position: absolute; left: 26px; top: 54px; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .phase-num {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--border-strong);
+    display: grid; place-items: center;
+    font-family: Archivo, sans-serif; font-weight: 800; font-size: 1.1rem;
+    position: relative; z-index: 1;
+  }
+  .phase-body { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+  .phase-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip {
+    font-family: "IBM Plex Mono", monospace; font-size: .7rem; font-weight: 500;
+    padding: 3px 8px; border-radius: 5px;
+    background: var(--surface-2); color: var(--muted); border: 1px solid var(--border);
+  }
+  .chip.cost { border-color: var(--border-strong); color: var(--text); }
+
+  ul.items { margin: 0; padding-left: 1.15em; display: flex; flex-direction: column; gap: 9px; }
+  ul.items li { font-size: .9rem; color: var(--muted); line-height: 1.5; }
+  ul.items li b { color: var(--text); font-weight: 600; }
+
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 16px; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 16px 20px; border-radius: 0 10px 10px 0;
+  }
+  .note p { font-size: .9rem; }
+
+  .dont { border-left-color: var(--critical); background: rgba(208,59,59,.07); }
+
+  .kicker { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .kicker span {
+    font-family: "IBM Plex Mono", monospace; font-size: .74rem;
+    padding: 5px 10px; border-radius: 6px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="stack">
+    <span class="eyebrow">Market Map · what the maxed-out version costs</span>
+    <h1>Nuclear Sub Roadmap</h1>
+    <p class="lede">
+      Roughly 8–12 months of solo work, or 4–5 months for three people. But the
+      first decision isn't engineering at all — and if you get it wrong, none of
+      the rest can pay for itself.
+    </p>
+  </header>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">The wall</span>
+      <h2>Real-time data is priced per user, per month</h2>
+      <p class="lede">
+        Exchanges charge for redistributing real-time quotes to end users — a
+        recurring fee for every subscriber you have, on top of the vendor's own
+        bill. That single fact sits directly on top of the $1.70 you net from a
+        $2 subscription.
+      </p>
+    </div>
+
+    <div class="viz-root">
+      <div class="viz-title">Per-user monthly data cost vs. what a $2 subscription nets</div>
+      <div class="viz-sub">
+        Estimated ranges. Exchange fee schedules are negotiated per vendor and
+        per plan — treat these as the shape of the problem, not a quote.
+      </div>
+
+      <div class="chart" id="chart">
+        <div class="threshold" id="threshold"></div>
+
+        <div class="row">
+          <div class="row-label">15-min delayed<small>what ships today</small></div>
+          <div class="track">
+            <div class="bar" style="left:0; width:3px; background:var(--good)"></div>
+            <div class="bar-note" style="left:12px">
+              <span class="verdict" style="color:var(--good)">
+                <span class="dotmark" style="background:var(--good)"></span>$0 · sustainable
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">IEX real-time<small>one venue, part of the volume</small></div>
+          <div class="track">
+            <div class="bar" style="left:0; width:3px; background:var(--good)"></div>
+            <div class="bar-note" style="left:12px">
+              <span class="verdict" style="color:var(--good)">
+                <span class="dotmark" style="background:var(--good)"></span>~$0 · sustainable, but partial
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Consolidated real-time<small>SIP, non-professional</small></div>
+          <div class="track">
+            <div class="bar" id="bar-sip" style="background:var(--serious)"></div>
+            <div class="bar-note" id="note-sip">
+              <span class="verdict" style="color:var(--serious)">
+                <span class="dotmark" style="background:var(--serious)"></span>$1–6 · straddles break-even
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="row-label">Depth of book<small>full order book feeds</small></div>
+          <div class="track">
+            <div class="bar" id="bar-depth" style="background:var(--critical)"></div>
+            <div class="bar-note" id="note-depth">
+              <span class="verdict" style="color:var(--critical)">
+                <span class="dotmark" style="background:var(--critical)"></span>$20+ · underwater
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="axis">
+          <span>$0</span><span>$6</span><span>$12</span><span>$18</span><span>$24</span>
+        </div>
+      </div>
+
+      <button class="table-toggle" id="tableToggle" aria-expanded="false" aria-controls="dataTable">
+        Show as table
+      </button>
+      <div class="datatable" id="dataTable" hidden>
+        <table>
+          <caption class="viz-sub" style="text-align:left; margin-bottom:8px">
+            Estimated per-user monthly exchange cost, against $1.70 net revenue.
+          </caption>
+          <thead>
+            <tr><th>Data tier</th><th>Cost / user / month</th><th>Verdict at $2</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>15-minute delayed</td><td class="num">$0</td><td>Sustainable</td></tr>
+            <tr><td>IEX real-time (single venue)</td><td class="num">~$0</td><td>Sustainable, partial coverage</td></tr>
+            <tr><td>Consolidated real-time (SIP, non-pro)</td><td class="num">$1–6</td><td>Straddles break-even</td></tr>
+            <tr><td>Depth of book</td><td class="num">$20+</td><td>Underwater</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="viz-foot">
+        Delayed data carries no per-subscriber exchange fee — which is precisely
+        why every free app offers it. Going real-time also brings obligations
+        that cost time rather than money: a redistributor agreement per feed,
+        monthly subscriber reporting, entitlement enforcement, and audit rights
+        over your user records.
+      </p>
+    </div>
+
+    <div class="note" style="margin-top:22px">
+      <p>
+        <b>This is the decision the whole roadmap hangs off.</b> Every feature
+        below is buildable. Only some of them are buildable <em>at $2 a month</em>.
+        Pick the lane before writing another line of code.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Pick a lane</span>
+      <h2>Three coherent products</h2>
+    </div>
+
+    <div class="lanes">
+      <div class="lane pick">
+        <span class="tag">Recommended</span>
+        <div class="lane-price">$2<span style="font-size:.9rem;font-weight:600;color:var(--muted)">/mo</span></div>
+        <h3>Best delayed map on any platform</h3>
+        <p>
+          Keep the 15-minute tier. Sell depth instead of speed: every universe,
+          every timeframe, the time scrubber, screener-driven maps, widgets,
+          alerts. Nobody has built a genuinely great delayed map on mobile, and
+          most retail users cannot act on 15 seconds anyway.
+        </p>
+        <p><b>Break-even ~21 subscribers. Data cost stays flat as you grow.</b></p>
+      </div>
+
+      <div class="lane">
+        <div class="lane-price">$12–20<span style="font-size:.9rem;font-weight:600;color:var(--muted)">/mo</span></div>
+        <h3>Real-time professional tool</h3>
+        <p>
+          Consolidated tape, streaming, depth. A different product for a
+          different customer, and the price has to carry both the per-user fee
+          and the compliance overhead. Viable, but it competes with entrenched
+          desktop tools rather than with a website that's bad on phones.
+        </p>
+        <p><b>Break-even moves to roughly 4–6× the subscriber count.</b></p>
+      </div>
+
+      <div class="lane">
+        <div class="lane-price">$2–5<span style="font-size:.9rem;font-weight:600;color:var(--muted)">/mo</span></div>
+        <h3>IEX real-time, labelled honestly</h3>
+        <p>
+          Genuinely live, but a single venue rather than the consolidated tape,
+          so prints and volumes differ from what a broker shows. Workable if the
+          UI is explicit about it. Gets ugly the first time a user compares your
+          number to their brokerage and finds a gap.
+        </p>
+        <p><b>Cheap, and a support burden you cannot design away.</b></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">The build</span>
+      <h2>Seven phases, gated in this order</h2>
+      <p class="lede">
+        Sizing assumes one experienced engineer. The order matters — each phase
+        removes a constraint the next one needs gone.
+      </p>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">1</div>
+      <div class="phase-body">
+        <h3>Make it survive 500 names</h3>
+        <div class="phase-meta">
+          <span class="chip cost">2–3 weeks</span>
+          <span class="chip">blocks everything</span>
+        </div>
+        <p>
+          Measured on a realistic 503-name universe: 6% of tiles get a label, 2%
+          reach Apple's 44pt touch minimum, and 25% render under 2px. The layout
+          is correct and fast — the product is unusable at that density.
+        </p>
+        <ul class="items">
+          <li><b>Tail aggregation.</b> Below a minimum area, collapse an industry's smallest names into one "+37 more" tile that opens on tap.</li>
+          <li><b>Level of detail.</b> Sector-only at low zoom, industries next, tickers last. Detail arrives as you descend rather than all at once.</li>
+          <li><b>Minimum touch target.</b> No tile smaller than 44pt is ever the deepest hit result; taps fall through to the parent.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">2</div>
+      <div class="phase-body">
+        <h3>Render the whole US market</h3>
+        <div class="phase-meta">
+          <span class="chip cost">3–4 weeks</span>
+          <span class="chip">~6,000 tiles at 120Hz</span>
+        </div>
+        <ul class="items">
+          <li><b>Skia <span class="mono">Atlas</span> for tiles</b> instead of one React element per rect — thousands of quads in a single draw call.</li>
+          <li><b>Pre-rasterised glyph atlas</b> for labels. Measuring text per tile per frame is the ceiling you hit first.</li>
+          <li><b>Static picture layer.</b> Geometry only changes on universe or timeframe change; a price tick should recolour, never re-layout.</li>
+          <li><b>Animated colour transitions</b> so live ticks read as movement rather than flicker.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">3</div>
+      <div class="phase-body">
+        <h3>A data spine you can trust</h3>
+        <div class="phase-meta">
+          <span class="chip cost">3–5 weeks</span>
+          <span class="chip">correctness, not features</span>
+        </div>
+        <ul class="items">
+          <li><b>Streaming transport.</b> WebSocket diffs applied to a resident snapshot; REST polling only as the fallback.</li>
+          <li><b>Corporate actions.</b> Splits and dividends must adjust historical returns, or your 1Y numbers are quietly wrong. Cheap vendors get this wrong constantly.</li>
+          <li><b>Point-in-time constituents.</b> A historical map built from today's index members is survivorship-biased and flattering.</li>
+          <li><b>Halts, delistings and dual listings</b> handled explicitly rather than silently dropped.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">4</div>
+      <div class="phase-body">
+        <h3>The five features people would switch for</h3>
+        <div class="phase-meta">
+          <span class="chip cost">10–14 weeks</span>
+          <span class="chip">the actual product</span>
+        </div>
+        <ul class="items">
+          <li><b>Time scrubber.</b> Drag through the session and watch the map evolve. Needs intraday snapshot storage server-side. Nobody does this well on mobile — this is the one that gets screenshotted.</li>
+          <li><b>Relative-to-index colouring.</b> On a red day everything is red and the map says nothing. Colour by performance <em>relative</em> to the index or sector and rotation appears. Days of work, disproportionate payoff.</li>
+          <li><b>Screener-driven maps.</b> Define a filter, map the result. This is the actual moat of the site you're competing with.</li>
+          <li><b>Breadth panel.</b> Advance/decline, percent above 50 and 200-day, new highs and lows. Context the treemap alone cannot carry.</li>
+          <li><b>Event overlay.</b> Earnings today, ex-dividend, halted — marked on the tile.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">5</div>
+      <div class="phase-body">
+        <h3>Live on the whole platform</h3>
+        <div class="phase-meta">
+          <span class="chip cost">8–11 weeks</span>
+          <span class="chip">retention, not acquisition</span>
+        </div>
+        <ul class="items">
+          <li><b>Home screen widgets.</b> Watchlist heat, sector strip. The cheapest daily-active-user mechanism on iOS.</li>
+          <li><b>Live Activity in the Dynamic Island</b> while the market is open.</li>
+          <li><b>Push alerts</b> on percent moves, sector rotation and breadth thresholds — evaluated in the worker cron, not on device.</li>
+          <li><b>iPad and Mac.</b> A treemap wants a big screen; this is where the product is genuinely better than the phone version, not merely bigger.</li>
+          <li><b>Watch complication, App Intents, Spotlight, iCloud watchlist sync.</b></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">6</div>
+      <div class="phase-body">
+        <h3>Rigor</h3>
+        <div class="phase-meta">
+          <span class="chip cost">3–4 weeks</span>
+          <span class="chip">currently the weakest area</span>
+        </div>
+        <ul class="items">
+          <li><b>Worker tests.</b> The paywall is the most business-critical code in the repo and has zero coverage today. Miniflare covers it.</li>
+          <li><b>Golden-image tests on the map.</b> Layout regressions are visual; a diff on a rendered canvas catches what unit tests cannot.</li>
+          <li><b>Accessibility.</b> The canvas is one opaque element — a screen reader gets nothing at all. Needs a parallel accessible list, Dynamic Type, and a VoiceOver audit. This is an App Store review risk as well as an exclusion.</li>
+          <li><b>Sentry, performance traces, staged rollouts, feature flags, funnel analytics.</b> You cannot tune a conversion rate you cannot see.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-num">7</div>
+      <div class="phase-body">
+        <h3>Compliance and trust</h3>
+        <div class="phase-meta">
+          <span class="chip cost">calendar, not dev time</span>
+          <span class="chip">start early</span>
+        </div>
+        <ul class="items">
+          <li><b>Exchange agreements</b> if you go real-time — signed per feed, with subscriber reporting and audit rights. Months of lead time, so start before you need it.</li>
+          <li><b>Display obligations.</b> Attribution, timestamps, and limits on redistributing derived values.</li>
+          <li><b>Rename off "Finviz."</b> The repo name and any store copy implying affiliation is trademark exposure that has nothing to do with your code.</li>
+          <li><b>Real privacy policy and terms</b> that match the "no data sold" promise, plus a deletion request path.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Restraint</span>
+      <h2>What not to build</h2>
+    </div>
+    <div class="note dont">
+      <p style="max-width:none">
+        <b>Full charting.</b> A year of work to lose to TradingView. Deep-link out
+        instead — already wired.<br><br>
+        <b>Broker integration or order routing.</b> A regulatory undertaking, not
+        a feature. It changes what kind of company you are.<br><br>
+        <b>Social feeds and comments.</b> Needs a scale you will not have early,
+        and brings moderation obligations immediately.<br><br>
+        <b>Every asset class at once.</b> Crypto, forex and world equities each
+        carry their own data contract and symbology. Win US equities first.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">If you only do three things</span>
+      <h2>The short path</h2>
+    </div>
+    <div class="split">
+      <div class="card stack">
+        <h4>1 · Fix the 500-name wall</h4>
+        <p style="font-size:.89rem;color:var(--muted)">
+          Without it the core claim is false at the scale you advertise. Two to
+          three weeks, and everything else assumes it.
+        </p>
+      </div>
+      <div class="card stack">
+        <h4>2 · Ship relative-to-index colouring</h4>
+        <p style="font-size:.89rem;color:var(--muted)">
+          Days of work. Turns a map that says "everything is red" into one that
+          says who is winning. The best effort-to-payoff ratio on this page.
+        </p>
+      </div>
+      <div class="card stack">
+        <h4>3 · Get a real data quote</h4>
+        <p style="font-size:.89rem;color:var(--muted)">
+          Ask two vendors what per-user redistribution actually costs at your
+          expected scale. That number decides your price, and your price decides
+          the roadmap.
+        </p>
+      </div>
+    </div>
+
+    <div class="kicker">
+      <span>~8–12 months solo</span>
+      <span>~4–5 months at three people</span>
+      <span>Phase 1 alone: 2–3 weeks</span>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  (function () {
+    // Bars are positioned against a shared $0–$24 scale so the threshold line
+    // and the axis ticks stay in agreement.
+    var MAX = 24;
+    var pct = function (v) { return (v / MAX * 100) + '%'; };
+
+    var stacked = window.matchMedia('(max-width: 640px)');
+
+    function place(barId, noteId, lo, hi) {
+      var bar = document.getElementById(barId);
+      var note = document.getElementById(noteId);
+      bar.style.left = pct(lo);
+      bar.style.width = pct(hi - lo);
+      // Under the stacked layout the note is a static block; an inline `left`
+      // would be inert there but is cleared anyway to keep the two in step.
+      note.style.left = stacked.matches ? '' : 'calc(' + pct(hi) + ' + 10px)';
+    }
+
+    function layoutBars() {
+      place('bar-sip', 'note-sip', 1, 6);
+      place('bar-depth', 'note-depth', 20, 24);
+    }
+    layoutBars();
+    stacked.addEventListener('change', layoutBars);
+
+    // The break-even marker spans the track column only, which starts after
+    // the label gutter.
+    var chart = document.getElementById('chart');
+    var threshold = document.getElementById('threshold');
+    function positionThreshold() {
+      var track = chart.querySelector('.track');
+      if (!track) return;
+      var left = track.offsetLeft + track.offsetWidth * (1.7 / MAX);
+      threshold.style.left = left + 'px';
+    }
+    positionThreshold();
+    window.addEventListener('resize', function () {
+      layoutBars();
+      positionThreshold();
+    });
+
+    var toggle = document.getElementById('tableToggle');
+    var table = document.getElementById('dataTable');
+    toggle.addEventListener('click', function () {
+      var open = table.hasAttribute('hidden');
+      if (open) table.removeAttribute('hidden');
+      else table.setAttribute('hidden', '');
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.textContent = open ? 'Hide table' : 'Show as table';
+    });
+  })();
+</script>
