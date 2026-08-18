@@ -301,8 +301,12 @@ export function TreemapCanvas({
     () => matchFont({ fontFamily: 'System', fontSize: 9, fontWeight: '500' }),
     []
   );
-  const groupFont = useMemo(
-    () => matchFont({ fontFamily: 'System', fontSize: 10, fontWeight: '600' }),
+  const sectorFont = useMemo(
+    () => matchFont({ fontFamily: 'System', fontSize: 10, fontWeight: '700' }),
+    []
+  );
+  const industryFont = useMemo(
+    () => matchFont({ fontFamily: 'System', fontSize: 8, fontWeight: '600' }),
     []
   );
 
@@ -337,7 +341,7 @@ export function TreemapCanvas({
               <GroupHeader
                 key={group.key}
                 tile={group}
-                font={groupFont}
+                font={group.kind === 'sector' ? sectorFont : industryFont}
                 scale={viewScale}
               />
             ))}
@@ -358,6 +362,40 @@ export function TreemapCanvas({
   );
 }
 
+/** Padding either side of a group label, in layout units. */
+const HEADER_PAD = 3;
+
+/**
+ * Trims a label with an ellipsis until it measures inside `maxWidth`.
+ *
+ * Measured rather than estimated from a characters-per-em guess: uppercase
+ * bold sector names are far wider per character than the average, and an
+ * estimate that is even slightly low lets one sector's name paint across
+ * its neighbours.
+ */
+function truncateToWidth(
+  label: string,
+  font: SkFont,
+  maxWidth: number
+): string {
+  if (maxWidth <= 0) return '';
+  if (font.measureText(label).width <= maxWidth) return label;
+
+  let fits = 0;
+  let rest = label.length;
+  while (fits < rest) {
+    const mid = Math.ceil((fits + rest) / 2);
+    if (font.measureText(`${label.slice(0, mid)}…`).width <= maxWidth) {
+      fits = mid;
+    } else {
+      rest = mid - 1;
+    }
+  }
+
+  // A lone ellipsis tells the reader nothing; leave the strip blank instead.
+  return fits > 0 ? `${label.slice(0, fits)}…` : '';
+}
+
 function GroupHeader({
   tile,
   font,
@@ -370,20 +408,18 @@ function GroupHeader({
   const header = tile.header;
   if (!header || !font) return null;
 
-  // Sector names only earn screen space once they will actually fit.
-  const onScreenWidth = header.w * scale;
-  if (onScreenWidth < 60) return null;
+  // Group labels scale with the map rather than counter-scaling like ticker
+  // labels, so whether they fit is zoom-independent — but whether they are
+  // readable is not, and below 60px on screen they are not.
+  if (header.w * scale < 60) return null;
 
-  const size = tile.kind === 'sector' ? 10 : 8;
-  const label =
-    tile.kind === 'sector' ? tile.label.toUpperCase() : tile.label;
-
-  const maxChars = Math.floor(onScreenWidth / (size * 0.62));
-  const text = label.length > maxChars ? `${label.slice(0, Math.max(1, maxChars - 1))}…` : label;
+  const label = tile.kind === 'sector' ? tile.label.toUpperCase() : tile.label;
+  const text = truncateToWidth(label, font, header.w - HEADER_PAD * 2);
+  if (!text) return null;
 
   return (
     <SkText
-      x={header.x + 3}
+      x={header.x + HEADER_PAD}
       y={header.y + header.h - 3}
       text={text}
       font={font}

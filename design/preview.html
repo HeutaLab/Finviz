@@ -1,0 +1,958 @@
+<title>Market Map Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  /* ---- Tokens: light is the base, dark redefines only the values ---- */
+  :root {
+    --ground: #f4f7fb;
+    --surface: #ffffff;
+    --surface-2: #eef2f8;
+    --border: #dce3ee;
+    --text: #131822;
+    --muted: #5a6478;
+    --accent: #2f6fe0;
+    --accent-soft: rgba(47, 111, 224, 0.10);
+    --shadow: 0 1px 2px rgba(19, 24, 34, .06), 0 12px 32px rgba(19, 24, 34, .08);
+
+    /* Data colours. These are the app's own encoding — never themed. */
+    --gain: #23a04a;
+    --loss: #d92f32;
+
+    /* The app's palette, fixed: phone screens show a dark-only app. */
+    --app-bg: #0b0d12;
+    --app-surface: #151922;
+    --app-raised: #1d222d;
+    --app-border: #2a3040;
+    --app-text: #e8ecf4;
+    --app-muted: #8b93a7;
+    --app-accent: #4c8dff;
+    --app-gain: #30cc5a;
+
+    --measure: 68ch;
+    --phone-scale: .78;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1017;
+      --surface: #151b26;
+      --surface-2: #1b2231;
+      --border: #262f40;
+      --text: #e6ebf4;
+      --muted: #8892a6;
+      --accent: #6fa4ff;
+      --accent-soft: rgba(111, 164, 255, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 16px 40px rgba(0, 0, 0, .34);
+      --gain: #30cc5a;
+      --loss: #f63538;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0d1017;
+    --surface: #151b26;
+    --surface-2: #1b2231;
+    --border: #262f40;
+    --text: #e6ebf4;
+    --muted: #8892a6;
+    --accent: #6fa4ff;
+    --accent-soft: rgba(111, 164, 255, 0.12);
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 16px 40px rgba(0, 0, 0, .34);
+    --gain: #30cc5a;
+    --loss: #f63538;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: clamp(32px, 6vw, 72px) clamp(18px, 4vw, 40px) 96px;
+  }
+
+  /* ---- Type ---- */
+  h1, h2, h3 {
+    font-family: Archivo, ui-sans-serif, system-ui, sans-serif;
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: -.02em;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800; line-height: 1.02; }
+  h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; line-height: 1.15; }
+  h3 { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+  p { margin: 0; max-width: var(--measure); }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .lede { font-size: clamp(1.05rem, 1.6vw, 1.2rem); color: var(--muted); }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .gain { color: var(--gain); }
+  .loss { color: var(--loss); }
+
+  /* ---- Structure ---- */
+  section { margin-top: clamp(56px, 8vw, 104px); }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+  }
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
+
+  .rule { height: 1px; background: var(--border); border: 0; margin: 0; }
+
+  /* ---- Cards ---- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+  }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+  /* ---- Stats ---- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .stat b {
+    display: block;
+    font-family: Archivo, sans-serif;
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em;
+  }
+  .stat span { font-size: .82rem; color: var(--muted); line-height: 1.4; display: block; margin-top: 4px; }
+
+  /* ---- Phone shell ---- */
+  .phone-slot {
+    width: calc(390px * var(--phone-scale));
+    height: calc(844px * var(--phone-scale));
+    flex: none;
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    transform: scale(var(--phone-scale));
+    transform-origin: top left;
+    border-radius: 46px;
+    background: #05070b;
+    padding: 10px;
+    box-shadow: var(--shadow), 0 0 0 1.5px rgba(140, 152, 175, .28);
+    position: relative;
+  }
+  .screen {
+    width: 370px;
+    height: 824px;
+    border-radius: 37px;
+    overflow: hidden;
+    background: var(--app-bg);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    color: var(--app-text);
+  }
+  .island {
+    position: absolute;
+    top: 9px; left: 50%;
+    transform: translateX(-50%);
+    width: 108px; height: 30px;
+    border-radius: 16px;
+    background: #05070b;
+    z-index: 40;
+  }
+  .statusbar {
+    height: 47px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 22px 5px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--app-text);
+    font-variant-numeric: tabular-nums;
+    flex: none;
+  }
+  .statusbar .sig { display: flex; gap: 4px; align-items: center; opacity: .95; }
+  .bars { display: flex; align-items: flex-end; gap: 1.5px; height: 9px; }
+  .bars i { width: 2.5px; background: currentColor; border-radius: 1px; display: block; }
+  .batt { width: 22px; height: 11px; border: 1.2px solid currentColor; border-radius: 3px; padding: 1.2px; opacity: .9; }
+  .batt div { height: 100%; width: 72%; background: currentColor; border-radius: 1px; }
+
+  /* ---- App chrome ---- */
+  .app-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; flex: none;
+  }
+  .app-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+  .chev { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--app-muted); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 22px; padding: 0 8px;
+    border: 1px solid var(--app-border); border-radius: 11px;
+    font-size: 9px; font-weight: 800; letter-spacing: .5px;
+    color: var(--app-muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .badge.live { border-color: #2f6b46; color: var(--app-gain); }
+  .dot { width: 5px; height: 5px; border-radius: 3px; background: var(--app-gain); }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 17px;
+    background: var(--app-surface);
+    display: grid; place-items: center;
+    color: var(--app-text);
+  }
+  .tfbar { display: flex; gap: 8px; padding: 0 12px; flex: none; overflow: hidden; }
+  .pill {
+    height: 34px; padding: 0 12px; border-radius: 17px;
+    background: var(--app-surface); border: 1px solid var(--app-border);
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 600; color: var(--app-muted);
+    flex: none;
+  }
+  .pill.on { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+  .lock { font-size: 9px; opacity: .8; }
+
+  .canvas-wrap {
+    flex: 1;
+    margin: 8px 4px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: var(--app-bg);
+  }
+  .canvas-wrap svg { width: 100%; height: 100%; display: block; }
+
+  .app-foot { flex: none; padding: 8px 0; display: flex; flex-direction: column; gap: 8px; }
+  .legend { display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+  .legend .bar { flex: 1; height: 6px; border-radius: 3px; overflow: hidden; display: flex; }
+  .legend .bar i { flex: 1; display: block; }
+  .legend span { font-size: 10px; color: var(--app-muted); font-family: "IBM Plex Mono", monospace; }
+  .upsell { text-align: center; font-size: 12px; font-weight: 600; color: var(--app-accent); }
+
+  .tabbar {
+    height: 83px; flex: none;
+    border-top: 1px solid var(--app-border);
+    background: var(--app-surface);
+    display: flex; padding-top: 8px;
+  }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--app-muted); font-size: 11px; font-weight: 600; }
+  .tab.on { color: var(--app-accent); }
+  .tab svg { width: 22px; height: 22px; }
+
+  /* ---- Controls ---- */
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 20px;
+  }
+  .ctrl { display: flex; align-items: center; gap: 10px; }
+  .ctrl label { font-size: .82rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  input[type="range"] { width: 190px; accent-color: var(--accent); }
+  .zoomval { font-family: "IBM Plex Mono", monospace; font-size: .85rem; font-weight: 600; min-width: 46px; }
+  .toggle {
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    border-radius: 8px; padding: 7px 12px; font: inherit; font-size: .82rem; font-weight: 600;
+    cursor: pointer; font-family: "IBM Plex Sans", sans-serif;
+  }
+  .toggle[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .toggle:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .readout {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .82rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .readout b { color: var(--text); font-weight: 600; }
+
+  /* ---- Screen gallery ---- */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: clamp(24px, 4vw, 48px);
+    justify-items: center;
+    max-width: 820px;
+    margin: 0 auto;
+  }
+  .shot { display: flex; flex-direction: column; gap: 14px; max-width: 340px; }
+  .shot > .caption { display: flex; flex-direction: column; gap: 5px; }
+  .caption h3 { font-size: 1rem; }
+  .caption p { font-size: .88rem; color: var(--muted); line-height: 1.5; }
+
+  /* ---- Sheet / paywall / list internals ---- */
+  .dim { position: absolute; inset: 0; background: rgba(0,0,0,.55); }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    background: var(--app-surface);
+    border-top-left-radius: 20px; border-top-right-radius: 20px;
+    border-top: 1px solid var(--app-border);
+    padding: 8px 16px 30px;
+  }
+  .grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--app-border); margin: 0 auto 16px; }
+  .sheet-head { display: flex; align-items: center; gap: 12px; }
+  .tkbadge {
+    min-width: 62px; height: 34px; border-radius: 8px; padding: 0 8px;
+    display: grid; place-items: center;
+    font-family: "IBM Plex Mono", monospace; font-weight: 700; font-size: 14px; color: #0b0d12;
+  }
+  .sheet-name { display: block; font-size: 16px; font-weight: 700; }
+  .sheet-sector { display: block; font-size: 12px; color: var(--app-muted); margin-top: 2px; }
+  .statgrid { display: flex; flex-wrap: wrap; margin-top: 20px; }
+  .statcell { width: 50%; padding: 8px 0; }
+  .statcell u { text-decoration: none; display: block; font-size: 11px; color: var(--app-muted); }
+  .statcell b { display: block; font-size: 18px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .done {
+    margin-top: 16px; height: 48px; border-radius: 12px;
+    background: var(--app-raised); display: grid; place-items: center;
+    font-size: 15px; font-weight: 600;
+  }
+
+  .pw { padding: 0 24px; flex: 1; display: flex; flex-direction: column; }
+  .pw-x { align-self: flex-end; padding: 10px 0; color: var(--app-muted); font-size: 20px; line-height: 1; }
+  .pw h4 { font-family: Archivo, sans-serif; font-size: 30px; font-weight: 800; margin: 0; letter-spacing: -.02em; }
+  .pw .sub { color: var(--app-muted); font-size: 14px; margin-top: 8px; line-height: 1.45; }
+  .benefits { margin-top: 18px; display: flex; flex-direction: column; gap: 13px; }
+  .benefit { display: flex; gap: 12px; }
+  .bicon { width: 32px; height: 32px; border-radius: 16px; background: var(--app-surface); display: grid; place-items: center; flex: none; color: var(--app-accent); }
+  .benefit b { font-size: 15px; font-weight: 700; display: block; }
+  .benefit span { font-size: 13px; color: var(--app-muted); line-height: 1.42; display: block; margin-top: 2px; }
+  .plan {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px; border-radius: 12px;
+    background: var(--app-surface); border: 1px solid var(--app-border);
+  }
+  .plan.on { border-color: var(--app-accent); }
+  .plan u { text-decoration: none; display: block; font-size: 12px; font-weight: 600; color: var(--app-muted); }
+  .plan b { display: block; font-size: 18px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .radio { width: 20px; height: 20px; border-radius: 10px; border: 2px solid var(--app-border); flex: none; }
+  .radio.on { border-color: var(--app-accent); background: radial-gradient(circle, var(--app-accent) 0 5px, transparent 6px); }
+  .cta { height: 52px; border-radius: 12px; background: var(--app-accent); color: #fff; display: grid; place-items: center; font-size: 16px; font-weight: 700; }
+  .fineprint { font-size: 10px; color: var(--app-muted); text-align: center; line-height: 1.5; }
+
+  .wl-title { font-family: Archivo, sans-serif; font-size: 24px; font-weight: 800; padding: 4px 16px 12px; letter-spacing: -.02em; }
+  .wl-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--app-surface); border-radius: 12px; padding: 12px;
+    margin: 0 12px 8px;
+  }
+  .wl-chip { min-width: 60px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-family: "IBM Plex Mono", monospace; font-weight: 700; font-size: 12px; color: #0b0d12; padding: 0 8px; }
+  .wl-name { display: block; font-size: 14px; font-weight: 600; }
+  .wl-ind { display: block; font-size: 11px; color: var(--app-muted); margin-top: 1px; }
+  .wl-right { margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; }
+  .wl-price { display: block; font-size: 14px; font-weight: 600; }
+  .wl-chg { display: block; font-size: 12px; font-weight: 700; }
+
+  .set-card { background: var(--app-surface); border-radius: 12px; margin: 0 16px 20px; padding: 2px 16px; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; font-size: 14px; }
+  .set-hint { font-size: 11px; color: var(--app-muted); line-height: 1.35; padding-bottom: 12px; }
+  .set-label { font-size: 11px; font-weight: 700; letter-spacing: .6px; color: var(--app-muted); padding: 0 16px 8px; }
+  .seg { display: flex; background: var(--app-bg); border-radius: 8px; padding: 2px; }
+  .seg i { padding: 0 12px; height: 30px; display: grid; place-items: center; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--app-muted); font-style: normal; }
+  .seg i.on { background: var(--app-raised); color: var(--app-text); }
+  .swtch { width: 51px; height: 31px; border-radius: 16px; background: var(--app-accent); position: relative; flex: none; }
+  .swtch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 27px; height: 27px; border-radius: 14px; background: #fff; }
+  .swtch.off { background: var(--app-border); }
+  .swtch.off::after { right: auto; left: 2px; }
+  .procard { background: var(--app-accent); border-radius: 12px; margin: 0 16px 20px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+  .procard b { color: #fff; font-size: 16px; font-weight: 800; display: block; }
+  .procard span { color: rgba(255,255,255,.85); font-size: 12px; display: block; margin-top: 2px; }
+  .preview-strip { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
+  .preview-strip i { flex: 1; }
+
+  /* ---- Notes ---- */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 16px 20px;
+    border-radius: 0 10px 10px 0;
+  }
+  .note p { font-size: .92rem; }
+
+  ul.tight { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 8px; }
+  ul.tight li { font-size: .92rem; color: var(--muted); }
+  ul.tight li b { color: var(--text); font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="stack">
+      <span class="eyebrow">Rendered from the shipped layout code</span>
+      <h1>Market Map</h1>
+      <p class="lede">
+        A market heatmap that survives a 390&nbsp;pt screen. Every tile below is
+        the real output of <span class="mono">squarify.ts</span> and
+        <span class="mono">color.ts</span> — not a mockup.
+      </p>
+      <div class="stats" style="margin-top:10px">
+        <div class="stat"><b>99</b><span>tickers laid out</span></div>
+        <div class="stat"><b>11</b><span>sectors nested</span></div>
+        <div class="stat"><b class="gain">47&nbsp;→&nbsp;97</b><span>labels readable, 1× to 3.2×</span></div>
+      </div>
+    </div>
+
+    <div class="phone-slot">
+      <div class="phone">
+        <div class="island"></div>
+        <div class="screen">
+          <div class="statusbar">
+            <span>9:41</span>
+            <span class="sig">
+              <span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:9px"></i></span>
+              <span class="batt"><div></div></span>
+            </span>
+          </div>
+
+          <div class="app-head">
+            <span class="app-title">S&amp;P 500 <span class="chev"></span></span>
+            <span style="flex:1"></span>
+            <span class="badge" id="freshBadge">15M DELAY</span>
+            <span class="icon-btn">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            </span>
+          </div>
+
+          <div class="tfbar">
+            <span class="pill on">1D</span>
+            <span class="pill">1W <span class="lock">🔒</span></span>
+            <span class="pill">1M <span class="lock">🔒</span></span>
+            <span class="pill">3M <span class="lock">🔒</span></span>
+            <span class="pill">6M <span class="lock">🔒</span></span>
+          </div>
+
+          <div class="canvas-wrap">
+            <svg id="liveMap" viewBox="0 0 382 568" preserveAspectRatio="none" role="img"
+                 aria-label="Treemap of the S and P 500 grouped by sector, coloured by daily performance"></svg>
+          </div>
+
+          <div class="app-foot">
+            <div class="legend">
+              <span id="legLo">-3%</span>
+              <span class="bar" id="legBar"></span>
+              <span id="legHi">+3%</span>
+            </div>
+            <div class="upsell">Go real-time and unlock every map — $2/month</div>
+          </div>
+
+          <div class="tabbar">
+            <span class="tab on">
+              <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+              Map
+            </span>
+            <span class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6.1L12 16.8 6.7 19.7l1.1-6.1L3.4 9.4l6-.8z"/></svg>
+              Watchlist
+            </span>
+            <span class="tab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4L5.3 5.3"/></svg>
+              Settings
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Drag it</span>
+      <h2>Zoom is the whole product</h2>
+      <p class="lede">
+        The desktop map scales to fit and the tickers become specks. Here the layout
+        is computed once into a fixed world space; zoom only changes a transform, and
+        labels are culled by their <em>on-screen</em> size. Scrub the slider — this is
+        the real culling rule running live.
+      </p>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label for="zoom">Zoom</label>
+        <input type="range" id="zoom" min="1" max="6" step="0.1" value="1">
+        <span class="zoomval" id="zoomVal">1.0×</span>
+      </div>
+      <div class="ctrl">
+        <button class="toggle" id="cbToggle" aria-pressed="false">Colourblind palette</button>
+        <button class="toggle" id="proToggle" aria-pressed="false">Pro (real-time)</button>
+      </div>
+      <div class="readout">
+        <b id="labelCount">47</b> of 99 tickers labelled ·
+        <b id="detailCount">12</b> showing % change
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-top:22px">
+      <div class="card stack">
+        <h3>Layout runs once</h3>
+        <p style="font-size:.9rem;color:var(--muted)">
+          <span class="mono">layoutMap()</span> is memoised on the data. A pinch mutates
+          a Skia transform, so squarify never re-runs mid-gesture. That is what keeps it
+          at frame rate with the full market loaded.
+        </p>
+      </div>
+      <div class="card stack">
+        <h3>Labels appear as you go</h3>
+        <p style="font-size:.9rem;color:var(--muted)">
+          A tile narrower than 26&nbsp;px on screen draws nothing. Past 54&nbsp;px it earns
+          a second line with the percent change. Zooming reveals information rather than
+          just magnifying it.
+        </p>
+      </div>
+      <div class="card stack">
+        <h3>Tiles stay square</h3>
+        <p style="font-size:.9rem;color:var(--muted)">
+          Squarified layout keeps the worst aspect ratio under 6:1 in tests. Slice-and-dice
+          would produce 100:1 slivers — unreadable, and far too thin to tap.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">The rest of the app</span>
+      <h2>Four screens</h2>
+    </div>
+
+    <div class="gallery">
+
+      <!-- Ticker sheet -->
+      <div class="shot">
+        <div class="phone-slot" style="--phone-scale:.72">
+          <div class="phone" style="--phone-scale:.72">
+            <div class="island"></div>
+            <div class="screen">
+              <div class="statusbar"><span>9:41</span><span class="sig"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:9px"></i></span><span class="batt"><div></div></span></span></div>
+              <div class="app-head">
+                <span class="app-title">S&amp;P 500 <span class="chev"></span></span>
+                <span style="flex:1"></span>
+                <span class="badge">15M DELAY</span>
+              </div>
+              <div class="tfbar"><span class="pill on">1D</span><span class="pill">1W <span class="lock">🔒</span></span><span class="pill">1M <span class="lock">🔒</span></span></div>
+              <div class="canvas-wrap">
+                <svg id="sheetMap" viewBox="0 0 382 568" preserveAspectRatio="none" aria-hidden="true"></svg>
+              </div>
+              <div class="app-foot"><div class="legend"><span>-3%</span><span class="bar" id="legBar2"></span><span>+3%</span></div></div>
+              <div class="tabbar"><span class="tab on"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>Map</span><span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6.1L12 16.8 6.7 19.7l1.1-6.1L3.4 9.4l6-.8z"/></svg>Watchlist</span><span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3"/></svg>Settings</span></div>
+
+              <div class="dim"></div>
+              <div class="sheet">
+                <div class="grabber"></div>
+                <div class="sheet-head">
+                  <span class="tkbadge" style="background:#3d4a58">NVDA</span>
+                  <span style="flex:1;min-width:0">
+                    <span class="sheet-name">NVIDIA</span>
+                    <span class="sheet-sector">Technology · Semiconductors</span>
+                  </span>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#f5c542"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6.1L12 16.8 6.7 19.7l1.1-6.1L3.4 9.4l6-.8z"/></svg>
+                </div>
+                <div class="statgrid">
+                  <span class="statcell"><u>Price</u><b>$1,284.31</b></span>
+                  <span class="statcell"><u>Change 1D</u><b style="color:#8b444e">-0.94%</b></span>
+                  <span class="statcell"><u>Market cap</u><b>$3.00T</b></span>
+                  <span class="statcell"><u>Volume</u><b>28.4M</b></span>
+                </div>
+                <div class="done">Done</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <h3>Tap a tile</h3>
+          <p>A sheet, not a route push — dismissing returns you to the exact zoom and pan
+             you were scanning from. The star adds it to your watchlist.</p>
+        </div>
+      </div>
+
+      <!-- Paywall -->
+      <div class="shot">
+        <div class="phone-slot" style="--phone-scale:.72">
+          <div class="phone" style="--phone-scale:.72">
+            <div class="island"></div>
+            <div class="screen">
+              <div class="statusbar"><span>9:41</span><span class="sig"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:9px"></i></span><span class="batt"><div></div></span></span></div>
+              <div class="pw">
+                <span class="pw-x">✕</span>
+                <h4>Market Map Pro</h4>
+                <p class="sub">Two dollars a month. No ads, no upsells, no data sold.</p>
+                <div class="benefits">
+                  <span class="benefit">
+                    <span class="bicon"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></svg></span>
+                    <span><b>Real-time prices</b><span>The free map runs 15 minutes behind. Pro updates live while the market is open.</span></span>
+                  </span>
+                  <span class="benefit">
+                    <span class="bicon"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg></span>
+                    <span><b>Every map</b><span>Nasdaq 100, Dow 30, the full US market, ETFs, crypto and world equities.</span></span>
+                  </span>
+                  <span class="benefit">
+                    <span class="bicon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.4 2"/></svg></span>
+                    <span><b>All timeframes</b><span>Week, month, quarter, half, year to date and one year — not just today.</span></span>
+                  </span>
+                  <span class="benefit">
+                    <span class="bicon"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6.1L12 16.8 6.7 19.7l1.1-6.1L3.4 9.4l6-.8z"/></svg></span>
+                    <span><b>Unlimited watchlists</b><span>Follow as many names as you like, sorted by performance.</span></span>
+                  </span>
+                </div>
+                <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+                  <span class="plan on"><span style="flex:1"><u>Monthly</u><b>$1.99</b></span><span class="radio on"></span></span>
+                  <span class="plan"><span style="flex:1"><u>Yearly</u><b>$19.99</b></span><span class="radio"></span></span>
+                </div>
+                <span style="flex:1"></span>
+                <div style="display:flex;flex-direction:column;gap:10px;align-items:center;padding-bottom:20px">
+                  <span class="cta" style="width:100%">Subscribe</span>
+                  <span style="color:var(--app-muted);font-size:13px;font-weight:600">Restore purchases</span>
+                  <span class="fineprint">Billed through your app store account and renews until cancelled. Cancel any time in your account settings.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <h3>$2 a month</h3>
+          <p>Locked timeframes stay visible and tappable — the tap opens this, which
+             converts better than hiding them and beats a dead disabled control.</p>
+        </div>
+      </div>
+
+      <!-- Watchlist -->
+      <div class="shot">
+        <div class="phone-slot" style="--phone-scale:.72">
+          <div class="phone" style="--phone-scale:.72">
+            <div class="island"></div>
+            <div class="screen">
+              <div class="statusbar"><span>9:41</span><span class="sig"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:9px"></i></span><span class="batt"><div></div></span></span></div>
+              <div class="wl-title" style="padding-top:12px">Watchlist</div>
+              <div id="wlRows"></div>
+              <span style="flex:1"></span>
+              <div class="tabbar"><span class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>Map</span><span class="tab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6.1L12 16.8 6.7 19.7l1.1-6.1L3.4 9.4l6-.8z"/></svg>Watchlist</span><span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3"/></svg>Settings</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <h3>Watchlist</h3>
+          <p>Sorted by performance, coloured on the same scale as the map so the two
+             views agree. Rows come from the same snapshot — no second fetch.</p>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="shot">
+        <div class="phone-slot" style="--phone-scale:.72">
+          <div class="phone" style="--phone-scale:.72">
+            <div class="island"></div>
+            <div class="screen">
+              <div class="statusbar"><span>9:41</span><span class="sig"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:9px"></i></span><span class="batt"><div></div></span></span></div>
+              <div class="wl-title" style="padding-top:12px">Settings</div>
+              <div class="procard">
+                <span style="flex:1"><b>Market Map Pro</b><span>Real-time prices, every map, all timeframes — $2/month</span></span>
+                <span style="color:#fff">›</span>
+              </div>
+
+              <div class="set-label">COLOURS</div>
+              <div class="set-card">
+                <div class="set-row"><span>Colour scale</span><span class="seg"><i class="on">Red / Green</i><i>Blue / Orange</i></span></div>
+                <div class="set-hint">Blue / orange keeps every level distinguishable with red-green colour blindness.</div>
+                <div class="preview-strip" id="setStrip"></div>
+                <div class="set-row"><span>Saturate at</span><span class="seg"><i>2%</i><i class="on">3%</i><i>5%</i></span></div>
+                <div class="set-hint">Lower values make quiet days easier to read; higher values keep volatile sessions from going fully saturated.</div>
+                <div class="set-row"><span>Use Finviz's seven buckets</span><span class="swtch off"></span></div>
+                <div class="set-hint">Off blends between them for smoother small tiles.</div>
+              </div>
+
+              <div class="set-label">INTERACTION</div>
+              <div class="set-card">
+                <div class="set-row"><span>Haptic feedback</span><span class="swtch"></span></div>
+                <div class="set-hint">A tick when you select a tile.</div>
+              </div>
+
+              <span style="flex:1"></span>
+              <div class="tabbar"><span class="tab"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>Map</span><span class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6.1L12 16.8 6.7 19.7l1.1-6.1L3.4 9.4l6-.8z"/></svg>Watchlist</span><span class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4L5.3 5.3"/></svg>Settings</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <h3>Settings</h3>
+          <p>The colour cap matters more than it sounds: a fixed ±3% scale renders a quiet
+             session as a flat grey wall. Dropping to 2% brings the day back.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="head">
+      <span class="eyebrow">Honest caveats</span>
+      <h2>What you are actually looking at</h2>
+    </div>
+    <div class="note">
+      <p>
+        The treemap geometry and every colour are produced by the app's real
+        <span class="mono">squarify.ts</span>, <span class="mono">buildTree.ts</span> and
+        <span class="mono">color.ts</span>, run against the deterministic mock dataset
+        (99 real large-caps with approximate market caps and seeded price moves). The
+        prices are therefore fictional; the <em>layout, grouping, colour mapping and
+        label-culling behaviour are exactly what ships</em>.
+      </p>
+    </div>
+    <ul class="tight" style="margin-top:20px">
+      <li><b>Device chrome is drawn in CSS here.</b> In the app it is native — the phone frames on this page are for context only.</li>
+      <li><b>The real canvas is Skia, not SVG.</b> Same geometry and same culling thresholds; SVG is just what a web page can show you.</li>
+      <li><b>Gestures can't be shown on a page.</b> Focal-point pinch, clamped pan and double-tap-to-reset need a touchscreen; the slider stands in for the zoom half.</li>
+      <li><b>Not affiliated with Finviz.</b> No Finviz data, code or branding is used — see the licensing note in the README.</li>
+    </ul>
+  </section>
+
+</div>
+
+<script id="tileData" type="application/json">{"w":382,"h":568,"tickers":[{"s":"NVDA","x":3,"y":28,"w":126.59,"h":118.57,"p":-1.67,"c":"#b04148","cb":"#ad6327","l":"#ffffff"},{"s":"AVGO","x":3,"y":148.57,"w":60.49,"h":62.5,"p":0.35,"c":"#3d5a52","cb":"#3b4f63","l":"#ffffff"},{"s":"AMD","x":65.49,"y":148.57,"w":33.25,"h":34.65,"p":-0.57,"c":"#734451","cb":"#664d42","l":"#ffffff"},{"s":"QCOM","x":65.49,"y":185.21,"w":33.25,"h":25.85,"p":0.3,"c":"#3e5752","cb":"#3c4e61","l":"#ffffff"},{"s":"TXN","x":100.74,"y":148.57,"w":28.85,"h":28.16,"p":0.47,"c":"#3c6051","cb":"#395268","l":"#ffffff"},{"s":"MU","x":100.74,"y":178.72,"w":28.85,"h":17.27,"p":-1.85,"c":"#b84146","cb":"#b86724","l":"#ffffff"},{"s":"INTC","x":100.74,"y":197.99,"w":28.85,"h":13.08,"p":-1.08,"c":"#90444d","cb":"#81552f","l":"#ffffff"},{"s":"MSFT","x":133.59,"y":28,"w":106.88,"h":144.73,"p":-0.28,"c":"#5d4552","cb":"#56494c","l":"#ffffff"},{"s":"ORCL","x":133.59,"y":174.73,"w":61.18,"h":36.34,"p":-1.43,"c":"#a4424a","cb":"#9d5e2a","l":"#ffffff"},{"s":"ADBE","x":196.77,"y":174.73,"w":28.92,"h":36.34,"p":0.44,"c":"#3c5e51","cb":"#3a5267","l":"#ffffff"},{"s":"PANW","x":227.68,"y":174.73,"w":12.79,"h":36.34,"p":-2.07,"c":"#c43f44","cb":"#c46c21","l":"#ffffff"},{"s":"AAPL","x":244.47,"y":28,"w":134.53,"h":123.16,"p":0.12,"c":"#404d53","cb":"#3f495a","l":"#ffffff"},{"s":"CRM","x":244.47,"y":165.16,"w":38.54,"h":25.68,"p":-0.97,"c":"#89444e","cb":"#795332","l":"#ffffff"},{"s":"NOW","x":244.47,"y":192.84,"w":38.54,"h":18.23,"p":-2.38,"c":"#d63c40","cb":"#d67620","l":"#ffffff"},{"s":"INTU","x":285.01,"y":165.16,"w":13.77,"h":45.91,"p":1.24,"c":"#34814e","cb":"#2f6a88","l":"#ffffff"},{"s":"ACN","x":302.77,"y":155.16,"w":32.38,"h":30.67,"p":-1.3,"c":"#9d434b","cb":"#945b2c","l":"#ffffff"},{"s":"IBM","x":302.77,"y":187.83,"w":32.38,"h":23.24,"p":-2.03,"c":"#c14045","cb":"#c26b21","l":"#ffffff"},{"s":"AMAT","x":339.16,"y":155.16,"w":24.26,"h":28.5,"p":-4.7,"c":"#f63538","cb":"#f5871f","l":"#0b0d12"},{"s":"LRCX","x":365.41,"y":155.16,"w":13.59,"h":28.5,"p":1.3,"c":"#33844e","cb":"#2f6d8b","l":"#ffffff"},{"s":"CSCO","x":339.16,"y":187.66,"w":39.84,"h":23.4,"p":0.47,"c":"#3c6051","cb":"#395268","l":"#ffffff"},{"s":"GOOGL","x":3,"y":242.07,"w":89.17,"h":110.42,"p":-0.51,"c":"#6f4451","cb":"#634d44","l":"#ffffff"},{"s":"META","x":94.17,"y":242.07,"w":54.44,"h":110.42,"p":1.08,"c":"#357a4e","cb":"#2f637f","l":"#ffffff"},{"s":"TMUS","x":3,"y":366.49,"w":26.11,"h":31.67,"p":1.48,"c":"#328b4e","cb":"#2f7494","l":"#ffffff"},{"s":"VZ","x":31.11,"y":366.49,"w":18.5,"h":31.67,"p":-0.94,"c":"#88444e","cb":"#775233","l":"#ffffff"},{"s":"CMCSA","x":51.61,"y":366.49,"w":16.74,"h":31.67,"p":-0.82,"c":"#81444f","cb":"#725138","l":"#ffffff"},{"s":"T","x":70.36,"y":366.49,"w":16.16,"h":31.67,"p":-0.29,"c":"#5e4552","cb":"#56494c","l":"#ffffff"},{"s":"NFLX","x":90.51,"y":366.49,"w":32.71,"h":31.67,"p":-0.22,"c":"#584553","cb":"#52484e","l":"#ffffff"},{"s":"DIS","x":125.23,"y":366.49,"w":18.83,"h":31.67,"p":-0.58,"c":"#734451","cb":"#674d42","l":"#ffffff"},{"s":"EA","x":148.05,"y":356.49,"w":0.56,"h":41.67,"p":-1.64,"c":"#af4148","cb":"#ab6227","l":"#ffffff"},{"s":"JPM","x":3,"y":429.16,"w":74.76,"h":37.44,"p":-0.95,"c":"#88444e","cb":"#785233","l":"#ffffff"},{"s":"BAC","x":3,"y":468.59,"w":33.86,"h":38.93,"p":-1.53,"c":"#a94249","cb":"#a46029","l":"#ffffff"},{"s":"WFC","x":38.86,"y":468.59,"w":38.9,"h":24.91,"p":-1.23,"c":"#99434c","cb":"#8e592d","l":"#ffffff"},{"s":"C","x":38.86,"y":495.5,"w":38.9,"h":12.02,"p":-2.08,"c":"#c43f44","cb":"#c56d21","l":"#ffffff"},{"s":"V","x":81.76,"y":429.16,"w":66.85,"h":35.19,"p":-0.84,"c":"#83444f","cb":"#735138","l":"#ffffff"},{"s":"MA","x":81.76,"y":466.35,"w":46.73,"h":41.17,"p":0.07,"c":"#404a54","cb":"#404757","l":"#ffffff"},{"s":"AXP","x":130.48,"y":466.35,"w":18.13,"h":41.17,"p":-1.34,"c":"#9f434b","cb":"#975c2c","l":"#ffffff"},{"s":"BRK.B","x":3,"y":521.52,"w":88.21,"h":43.48,"p":-1.87,"c":"#b94146","cb":"#b96723","l":"#ffffff"},{"s":"GS","x":95.21,"y":521.52,"w":17.87,"h":29.34,"p":0.03,"c":"#414754","cb":"#414655","l":"#ffffff"},{"s":"MS","x":115.08,"y":521.52,"w":17.87,"h":29.34,"p":-1.61,"c":"#ad4249","cb":"#a96228","l":"#ffffff"},{"s":"SCHW","x":134.95,"y":521.52,"w":13.66,"h":29.34,"p":-2.63,"c":"#e4393d","cb":"#e37d20","l":"#0b0d12"},{"s":"BLK","x":95.21,"y":554.87,"w":53.4,"h":10.13,"p":-2.5,"c":"#dd3b3f","cb":"#dd7a20","l":"#ffffff"},{"s":"AMZN","x":154.61,"y":242.07,"w":118.58,"h":75.73,"p":0.78,"c":"#386d4f","cb":"#345a73","l":"#ffffff"},{"s":"TSLA","x":154.61,"y":331.8,"w":47.7,"h":72.41,"p":0.65,"c":"#3a6850","cb":"#36576f","l":"#ffffff"},{"s":"GM","x":154.61,"y":406.2,"w":26.18,"h":7.02,"p":3.36,"c":"#30cc5a","cb":"#34b6e4","l":"#0b0d12"},{"s":"F","x":182.79,"y":406.2,"w":19.52,"h":7.02,"p":-0.32,"c":"#614552","cb":"#584a4b","l":"#ffffff"},{"s":"HD","x":206.31,"y":331.8,"w":48.34,"h":26.34,"p":0.48,"c":"#3c6051","cb":"#395368","l":"#ffffff"},{"s":"LOW","x":256.65,"y":331.8,"w":16.55,"h":26.34,"p":2.66,"c":"#30be56","cb":"#32a8d3","l":"#0b0d12"},{"s":"MCD","x":206.31,"y":362.14,"w":27.45,"h":33.39,"p":-0.12,"c":"#4f4553","cb":"#4b4751","l":"#ffffff"},{"s":"SBUX","x":206.31,"y":397.53,"w":27.45,"h":15.69,"p":1.37,"c":"#33874e","cb":"#2f6f8f","l":"#ffffff"},{"s":"BKNG","x":237.76,"y":362.14,"w":35.44,"h":16.22,"p":-0.09,"c":"#4c4553","cb":"#484652","l":"#ffffff"},{"s":"TJX","x":237.76,"y":382.36,"w":17.3,"h":30.86,"p":1.95,"c":"#2f9c4f","cb":"#2e84a9","l":"#ffffff"},{"s":"NKE","x":259.05,"y":382.36,"w":14.14,"h":30.86,"p":0.38,"c":"#3d5b52","cb":"#3b5065","l":"#ffffff"},{"s":"LLY","x":279.19,"y":242.07,"w":54.53,"h":65.97,"p":0.05,"c":"#404854","cb":"#404756","l":"#ffffff"},{"s":"JNJ","x":279.19,"y":310.04,"w":54.53,"h":30.29,"p":1.18,"c":"#347e4e","cb":"#2f6785","l":"#ffffff"},{"s":"ABBV","x":335.73,"y":242.07,"w":43.27,"h":33.01,"p":-2.34,"c":"#d43d41","cb":"#d47520","l":"#ffffff"},{"s":"MRK","x":335.73,"y":277.08,"w":43.27,"h":28.77,"p":-0.76,"c":"#7e444f","cb":"#70503b","l":"#ffffff"},{"s":"AMGN","x":335.73,"y":307.84,"w":20.99,"h":32.48,"p":-0.48,"c":"#6c4551","cb":"#624c45","l":"#ffffff"},{"s":"PFE","x":358.71,"y":307.84,"w":20.29,"h":32.48,"p":0.51,"c":"#3b6251","cb":"#39536a","l":"#ffffff"},{"s":"UNH","x":279.19,"y":344.32,"w":40.76,"h":59.96,"p":0.13,"c":"#404e53","cb":"#3f495a","l":"#ffffff"},{"s":"CVS","x":279.19,"y":406.29,"w":40.76,"h":6.94,"p":1.17,"c":"#347e4e","cb":"#2f6784","l":"#ffffff"},{"s":"TMO","x":323.95,"y":354.32,"w":28.61,"h":24.08,"p":-0.37,"c":"#654552","cb":"#5b4b49","l":"#ffffff"},{"s":"DHR","x":354.56,"y":354.32,"w":24.44,"h":24.08,"p":1.35,"c":"#33864e","cb":"#2f6f8e","l":"#ffffff"},{"s":"ABT","x":323.95,"y":382.4,"w":27.49,"h":30.82,"p":2.29,"c":"#2fad52","cb":"#3096be","l":"#ffffff"},{"s":"ISRG","x":355.44,"y":382.4,"w":23.56,"h":30.82,"p":-0.18,"c":"#554553","cb":"#4f484f","l":"#ffffff"},{"s":"WMT","x":154.61,"y":444.22,"w":47.75,"h":50.56,"p":1.58,"c":"#328f4f","cb":"#2e7899","l":"#ffffff"},{"s":"COST","x":204.36,"y":444.22,"w":35.32,"h":43.21,"p":0.09,"c":"#404b53","cb":"#404858","l":"#ffffff"},{"s":"TGT","x":204.36,"y":489.44,"w":35.32,"h":5.35,"p":0.06,"c":"#404954","cb":"#404757","l":"#ffffff"},{"s":"KO","x":154.61,"y":498.79,"w":34.5,"h":35.45,"p":1.7,"c":"#31934f","cb":"#2e7c9e","l":"#ffffff"},{"s":"PEP","x":154.61,"y":536.24,"w":34.5,"h":28.76,"p":-2.59,"c":"#e23a3e","cb":"#e17c20","l":"#0b0d12"},{"s":"PG","x":193.11,"y":508.79,"w":46.57,"h":26.87,"p":-1.44,"c":"#a5424a","cb":"#9e5e2a","l":"#ffffff"},{"s":"PM","x":193.11,"y":539.66,"w":30.32,"h":25.34,"p":-0.81,"c":"#81444f","cb":"#725139","l":"#ffffff"},{"s":"MDLZ","x":227.42,"y":539.66,"w":12.26,"h":25.34,"p":-0.18,"c":"#554553","cb":"#4f484f","l":"#ffffff"},{"s":"GE","x":245.68,"y":444.22,"w":22.54,"h":25.26,"p":1.65,"c":"#31924f","cb":"#2e7a9c","l":"#ffffff"},{"s":"RTX","x":270.22,"y":444.22,"w":17.64,"h":25.26,"p":0.53,"c":"#3b6351","cb":"#38546a","l":"#ffffff"},{"s":"BA","x":289.86,"y":444.22,"w":25,"h":11.63,"p":-0.54,"c":"#714451","cb":"#654d43","l":"#ffffff"},{"s":"LMT","x":289.86,"y":457.85,"w":25,"h":11.63,"p":0.4,"c":"#3d5c52","cb":"#3b5165","l":"#ffffff"},{"s":"CAT","x":245.68,"y":473.48,"w":27.21,"h":24.57,"p":-2.16,"c":"#c93e43","cb":"#ca6f21","l":"#ffffff"},{"s":"DE","x":245.68,"y":500.05,"w":27.21,"h":15.46,"p":-0.05,"c":"#474554","cb":"#454653","l":"#ffffff"},{"s":"UNP","x":276.89,"y":473.48,"w":17.35,"h":29.63,"p":-1,"c":"#8b444e","cb":"#7a5330","l":"#ffffff"},{"s":"HON","x":298.24,"y":473.48,"w":16.62,"h":29.63,"p":-0.22,"c":"#584553","cb":"#52484e","l":"#ffffff"},{"s":"UPS","x":276.89,"y":507.11,"w":37.97,"h":8.39,"p":-0.68,"c":"#794450","cb":"#6c4f3e","l":"#ffffff"},{"s":"XOM","x":320.86,"y":444.22,"w":35.98,"h":46.29,"p":-1.26,"c":"#9b434c","cb":"#915a2d","l":"#ffffff"},{"s":"CVX","x":358.84,"y":444.22,"w":20.16,"h":46.29,"p":1.72,"c":"#31944f","cb":"#2e7d9f","l":"#ffffff"},{"s":"COP","x":320.86,"y":494.51,"w":22.35,"h":20.99,"p":0.5,"c":"#3b6151","cb":"#395369","l":"#ffffff"},{"s":"EOG","x":345.2,"y":494.51,"w":11.11,"h":20.99,"p":0.13,"c":"#404e53","cb":"#3f495a","l":"#ffffff"},{"s":"SLB","x":360.31,"y":494.51,"w":18.69,"h":9.04,"p":0.6,"c":"#3a6650","cb":"#37566d","l":"#ffffff"},{"s":"PSX","x":360.31,"y":507.55,"w":18.69,"h":7.95,"p":-0.22,"c":"#584553","cb":"#52484e","l":"#ffffff"},{"s":"LIN","x":245.68,"y":536.5,"w":21.48,"h":28.5,"p":-0.41,"c":"#684552","cb":"#5e4b48","l":"#ffffff"},{"s":"SHW","x":269.16,"y":536.5,"w":8.06,"h":28.5,"p":-3.72,"c":"#f63538","cb":"#f5871f","l":"#0b0d12"},{"s":"FCX","x":281.22,"y":536.5,"w":9.62,"h":14.37,"p":0.03,"c":"#414754","cb":"#414655","l":"#ffffff"},{"s":"NEM","x":281.22,"y":554.87,"w":9.62,"h":10.13,"p":-0.4,"c":"#674552","cb":"#5d4b48","l":"#ffffff"},{"s":"NEE","x":296.85,"y":536.5,"w":14.94,"h":28.5,"p":-0.07,"c":"#494554","cb":"#474652","l":"#ffffff"},{"s":"SO","x":313.78,"y":536.5,"w":12,"h":21.36,"p":1.52,"c":"#328d4f","cb":"#2e7596","l":"#ffffff"},{"s":"DUK","x":327.78,"y":536.5,"w":10.53,"h":21.36,"p":-0.53,"c":"#704451","cb":"#644d44","l":"#ffffff"},{"s":"AEP","x":313.78,"y":559.86,"w":24.53,"h":5.14,"p":-0.17,"c":"#544553","cb":"#4e484f","l":"#ffffff"},{"s":"AMT","x":344.31,"y":521.5,"w":17.42,"h":20.47,"p":1.99,"c":"#2f9e4f","cb":"#2e86ab","l":"#ffffff"},{"s":"EQIX","x":363.74,"y":521.5,"w":15.26,"h":20.47,"p":1.85,"c":"#30994f","cb":"#2e81a5","l":"#ffffff"},{"s":"PLD","x":344.31,"y":545.97,"w":21.39,"h":19.03,"p":2.38,"c":"#2fb153","cb":"#309bc3","l":"#ffffff"},{"s":"SPG","x":369.7,"y":545.97,"w":9.3,"h":19.03,"p":2.76,"c":"#30c258","cb":"#33acd8","l":"#0b0d12"}],"groups":[{"k":"sector","t":"Technology","x":1,"y":1,"w":380,"h":15},{"k":"industry","t":"Semiconductors","x":2,"y":17,"w":128.59,"h":10},{"k":"industry","t":"Software—Infrastructure","x":132.59,"y":17,"w":108.88,"h":10},{"k":"industry","t":"Consumer Electronics","x":243.47,"y":17,"w":136.53,"h":10},{"k":"industry","t":"Software—Application","x":243.47,"y":154.16,"w":56.3,"h":10},{"k":"sector","t":"Communication Services","x":1,"y":215.07,"w":149.61,"h":15},{"k":"industry","t":"Internet Content & Information","x":2,"y":231.07,"w":147.61,"h":10},{"k":"industry","t":"Telecom Services","x":2,"y":355.49,"w":85.51,"h":10},{"k":"industry","t":"Entertainment","x":89.51,"y":355.49,"w":55.54,"h":10},{"k":"sector","t":"Financial Services","x":1,"y":402.16,"w":149.61,"h":15},{"k":"industry","t":"Banks—Diversified","x":2,"y":418.16,"w":76.76,"h":10},{"k":"industry","t":"Credit Services","x":80.76,"y":418.16,"w":68.85,"h":10},{"k":"industry","t":"Insurance—Diversified","x":2,"y":510.52,"w":90.21,"h":10},{"k":"industry","t":"Capital Markets","x":94.21,"y":510.52,"w":55.4,"h":10},{"k":"sector","t":"Consumer Cyclical","x":152.61,"y":215.07,"w":122.58,"h":15},{"k":"industry","t":"Internet Retail","x":153.61,"y":231.07,"w":120.58,"h":10},{"k":"industry","t":"Auto Manufacturers","x":153.61,"y":320.8,"w":49.7,"h":10},{"k":"industry","t":"Home Improvement Retail","x":205.31,"y":320.8,"w":68.89,"h":10},{"k":"sector","t":"Healthcare","x":277.19,"y":215.07,"w":103.81,"h":15},{"k":"industry","t":"Drug Manufacturers—General","x":278.19,"y":231.07,"w":101.81,"h":10},{"k":"industry","t":"Diagnostics & Research","x":322.95,"y":343.32,"w":57.05,"h":10},{"k":"sector","t":"Consumer Defensive","x":152.61,"y":417.22,"w":89.07,"h":15},{"k":"industry","t":"Discount Stores","x":153.61,"y":433.22,"w":87.07,"h":10},{"k":"industry","t":"Household & Personal Products","x":192.11,"y":497.79,"w":48.57,"h":10},{"k":"sector","t":"Industrials","x":243.68,"y":417.22,"w":73.18,"h":15},{"k":"industry","t":"Aerospace & Defense","x":244.68,"y":433.22,"w":71.18,"h":10},{"k":"sector","t":"Energy","x":318.86,"y":417.22,"w":62.14,"h":15},{"k":"industry","t":"Oil & Gas Integrated","x":319.86,"y":433.22,"w":60.14,"h":10},{"k":"sector","t":"Basic Materials","x":243.68,"y":519.5,"w":49.17,"h":15},{"k":"sector","t":"Utilities","x":294.85,"y":519.5,"w":45.47,"h":15}],"sectors":[{"t":"Technology","p":-0.59,"v":13400000000000},{"t":"Communication Services","p":0.02,"v":4648000000000},{"t":"Financial Services","p":-1.25,"v":4145000000000},{"t":"Consumer Cyclical","p":0.78,"v":4127000000000},{"t":"Healthcare","p":0.07,"v":3505000000000},{"t":"Consumer Defensive","p":0.07,"v":2265000000000},{"t":"Industrials","p":-0.18,"v":1260000000000},{"t":"Energy","p":-0.02,"v":1075000000000},{"t":"Basic Materials","p":-1.06,"v":415000000000},{"t":"Utilities","p":0.21,"v":385000000000},{"t":"Real Estate","p":2.21,"v":330000000000}]}</script>
+<script>
+  (function () {
+    var DATA = JSON.parse(document.getElementById('tileData').textContent);
+    var MIN_LABEL_PX = 26, MIN_DETAIL_PX = 54;
+    var NS = 'http://www.w3.org/2000/svg';
+
+    var state = { scale: 1, cb: false };
+
+    function el(name, attrs, text) {
+      var node = document.createElementNS(NS, name);
+      for (var k in attrs) node.setAttribute(k, attrs[k]);
+      if (text != null) node.textContent = text;
+      return node;
+    }
+
+    // Measured truncation, mirroring truncateToWidth() in TreemapCanvas.tsx.
+    // Estimating characters-per-em lets wide uppercase sector names paint
+    // across their neighbours.
+    var measureCtx = document.createElement('canvas').getContext('2d');
+    function textWidth(text, size, weight) {
+      measureCtx.font = weight + ' ' + size + 'px "IBM Plex Sans", system-ui, sans-serif';
+      return measureCtx.measureText(text).width;
+    }
+    function truncateToWidth(label, size, weight, maxWidth) {
+      if (maxWidth <= 0) return '';
+      if (textWidth(label, size, weight) <= maxWidth) return label;
+
+      var fits = 0, rest = label.length;
+      while (fits < rest) {
+        var mid = Math.ceil((fits + rest) / 2);
+        if (textWidth(label.slice(0, mid) + '…', size, weight) <= maxWidth) fits = mid;
+        else rest = mid - 1;
+      }
+      return fits > 0 ? label.slice(0, fits) + '…' : '';
+    }
+
+    // Same clamp as the gesture handler in TreemapCanvas.tsx.
+    function transformFor(scale) {
+      var cx = DATA.w / 2, cy = DATA.h / 2;
+      var tx = DATA.w / 2 - cx * scale;
+      var ty = DATA.h / 2 - cy * scale;
+      tx = Math.min(0, Math.max(Math.min(0, DATA.w - DATA.w * scale), tx));
+      ty = Math.min(0, Math.max(Math.min(0, DATA.h - DATA.h * scale), ty));
+      return { tx: tx, ty: ty };
+    }
+
+    function draw(svg, scale, colorblind) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+      var t = transformFor(scale);
+      var g = el('g', { transform: 'translate(' + t.tx + ' ' + t.ty + ') scale(' + scale + ')' });
+      var labelled = 0, detailed = 0;
+
+      DATA.tickers.forEach(function (d) {
+        g.appendChild(el('rect', {
+          x: d.x, y: d.y, width: d.w, height: d.h,
+          fill: colorblind ? d.cb : d.c
+        }));
+      });
+
+      DATA.groups.forEach(function (grp) {
+        // Readability gate is in screen space; the fit is zoom-independent
+        // because group labels scale with the map.
+        if (grp.w * scale < 60) return;
+
+        var size = grp.k === 'sector' ? 10 : 8;
+        var weight = grp.k === 'sector' ? 700 : 600;
+        var label = grp.k === 'sector' ? grp.t.toUpperCase() : grp.t;
+        var text = truncateToWidth(label, size, weight, grp.w - 6);
+        if (!text) return;
+
+        g.appendChild(el('text', {
+          x: grp.x + 3, y: grp.y + grp.h - 3,
+          'font-size': size,
+          'font-weight': weight,
+          fill: grp.k === 'sector' ? '#c9d2e4' : '#8b93a7',
+          'font-family': 'IBM Plex Sans, system-ui, sans-serif'
+        }, text));
+      });
+
+      DATA.tickers.forEach(function (d) {
+        var sw = d.w * scale, sh = d.h * scale;
+        if (sw < MIN_LABEL_PX || sh < 14) return;
+        labelled++;
+
+        var showDetail = sw >= MIN_DETAIL_PX && sh >= 30;
+        if (showDetail) detailed++;
+
+        var inner = el('g', {
+          transform: 'translate(' + (d.x + d.w / 2) + ' ' + (d.y + d.h / 2) + ') scale(' + (1 / scale) + ')'
+        });
+        inner.appendChild(el('text', {
+          x: 0, y: showDetail ? -1 : 4, 'text-anchor': 'middle',
+          'font-size': 11, 'font-weight': 700, fill: d.l,
+          'font-family': 'IBM Plex Mono, ui-monospace, monospace'
+        }, d.s));
+        if (showDetail) {
+          inner.appendChild(el('text', {
+            x: 0, y: 11, 'text-anchor': 'middle',
+            'font-size': 9, 'font-weight': 500, fill: d.l, opacity: .85,
+            'font-family': 'IBM Plex Mono, ui-monospace, monospace'
+          }, (d.p >= 0 ? '+' : '') + d.p.toFixed(2) + '%'));
+        }
+        g.appendChild(inner);
+      });
+
+      svg.appendChild(g);
+      return { labelled: labelled, detailed: detailed };
+    }
+
+    var liveMap = document.getElementById('liveMap');
+    var sheetMap = document.getElementById('sheetMap');
+    var zoom = document.getElementById('zoom');
+    var zoomVal = document.getElementById('zoomVal');
+    var labelCount = document.getElementById('labelCount');
+    var detailCount = document.getElementById('detailCount');
+    var cbToggle = document.getElementById('cbToggle');
+    var proToggle = document.getElementById('proToggle');
+    var freshBadge = document.getElementById('freshBadge');
+
+    function render() {
+      var counts = draw(liveMap, state.scale, state.cb);
+      zoomVal.textContent = state.scale.toFixed(1) + '×';
+      labelCount.textContent = counts.labelled;
+      detailCount.textContent = counts.detailed;
+      paintLegend();
+    }
+
+    // Legend swatches read straight off the tile colours at known percentages.
+    function swatchFor(pct) {
+      var best = null, bestDist = Infinity;
+      DATA.tickers.forEach(function (d) {
+        var dist = Math.abs(d.p - pct);
+        if (dist < bestDist) { bestDist = dist; best = d; }
+      });
+      return state.cb ? best.cb : best.c;
+    }
+
+    var STOPS_RG = ['#f63538', '#bf4045', '#8b444e', '#414554', '#35764e', '#2f9e4f', '#30cc5a'];
+    var STOPS_BO = ['#f5871f', '#c06a21', '#7a5330', '#414554', '#2f5f7a', '#2e86ab', '#34b6e4'];
+
+    function paintLegend() {
+      var stops = state.cb ? STOPS_BO : STOPS_RG;
+      ['legBar', 'legBar2', 'setStrip'].forEach(function (id) {
+        var bar = document.getElementById(id);
+        if (!bar) return;
+        bar.innerHTML = '';
+        stops.forEach(function (c) {
+          var i = document.createElement('i');
+          i.style.background = c;
+          i.style.flex = '1';
+          i.style.display = 'block';
+          bar.appendChild(i);
+        });
+      });
+    }
+
+    zoom.addEventListener('input', function () {
+      state.scale = parseFloat(zoom.value);
+      render();
+    });
+
+    cbToggle.addEventListener('click', function () {
+      state.cb = !state.cb;
+      cbToggle.setAttribute('aria-pressed', String(state.cb));
+      render();
+      draw(sheetMap, 1, state.cb);
+      paintWatchlist();
+    });
+
+    proToggle.addEventListener('click', function () {
+      var pro = proToggle.getAttribute('aria-pressed') !== 'true';
+      proToggle.setAttribute('aria-pressed', String(pro));
+      freshBadge.className = pro ? 'badge live' : 'badge';
+      freshBadge.innerHTML = pro
+        ? '<span class="dot"></span>LIVE'
+        : '15M DELAY';
+      document.querySelectorAll('.tfbar .pill .lock').forEach(function (l) {
+        l.style.display = pro ? 'none' : '';
+      });
+      document.querySelector('.upsell').textContent = pro
+        ? 'Pro is active — updating every 30 seconds'
+        : 'Go real-time and unlock every map — $2/month';
+    });
+
+    // Watchlist rows, built from the same snapshot the map uses.
+    var WATCH = ['NVDA', 'AAPL', 'TSLA', 'JPM', 'XOM', 'PLD'];
+    var NAMES = {
+      NVDA: ['NVIDIA', 'Semiconductors'], AAPL: ['Apple', 'Consumer Electronics'],
+      TSLA: ['Tesla', 'Auto Manufacturers'], JPM: ['JPMorgan Chase', 'Banks—Diversified'],
+      XOM: ['Exxon Mobil', 'Oil & Gas Integrated'], PLD: ['Prologis', 'REIT—Industrial']
+    };
+
+    function paintWatchlist() {
+      var host = document.getElementById('wlRows');
+      if (!host) return;
+      host.innerHTML = '';
+
+      WATCH.map(function (sym) {
+        return DATA.tickers.find(function (d) { return d.s === sym; });
+      }).filter(Boolean).sort(function (a, b) { return b.p - a.p; })
+        .forEach(function (d) {
+          var meta = NAMES[d.s] || [d.s, ''];
+          var row = document.createElement('div');
+          row.className = 'wl-row';
+          row.innerHTML =
+            '<span class="wl-chip" style="background:' + (state.cb ? d.cb : d.c) + ';color:' + d.l + '">' + d.s + '</span>' +
+            '<span style="min-width:0;flex:1"><span class="wl-name">' + meta[0] + '</span>' +
+            '<span class="wl-ind">' + meta[1] + '</span></span>' +
+            '<span class="wl-right"><span class="wl-price">$' +
+              (Math.round((300 + d.p * 40) * 100) / 100).toFixed(2) + '</span>' +
+            '<span class="wl-chg" style="color:' + (state.cb ? d.cb : d.c) + '">' +
+              (d.p >= 0 ? '+' : '') + d.p.toFixed(2) + '%</span></span>';
+          host.appendChild(row);
+        });
+    }
+
+    render();
+    draw(sheetMap, 1, false);
+    paintWatchlist();
+  })();
+</script>
