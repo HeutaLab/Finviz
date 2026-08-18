@@ -38,7 +38,7 @@ app/                     expo-router screens
 
 src/treemap/             pure, tested, no React
   squarify.ts            squarified treemap layout
-  buildTree.ts           sector → industry → ticker nesting, hit testing
+  buildTree.ts           nesting, tail folding, level of detail, hit testing
   color.ts               performance → colour, both palettes
 
 src/data/
@@ -52,6 +52,7 @@ src/data/
 
 src/components/
   TreemapCanvas.tsx      Skia rendering + gestures
+  GroupSheet.tsx         what is inside a folded or undissolved block
   MapHeader.tsx          universe picker, freshness badge, search
   TimeframeBar.tsx       timeframe pills with Pro locks
   TickerSheet.tsx        tap-a-tile detail sheet
@@ -73,6 +74,38 @@ Gestures only mutate a transform on the Skia group, so squarify never runs
 during a pinch. Labels are culled by their **on-screen** size, so a tile
 that is 8px wide draws no text at 1× and draws its symbol and change at 4×.
 That is both the performance strategy and the core UX affordance.
+
+### Surviving a real index
+
+A 503-name map does not fit on a phone by scaling down. Measured on a
+realistic index before this existed: 6% of tiles could hold a label, 2%
+reached Apple's 44pt touch minimum, a quarter rendered under 2px, and the
+worst tile was 103:1. Two mechanisms fix it, and they do different jobs.
+
+**Folding** is permanent and deliberately conservative (`MIN_TILE_AREA`).
+Only names that could never be tapped at *any* zoom are collapsed into a
+`+N` tile, which opens as a list. Nothing is lost — `coveredQuotes()` walks
+folds and blocks alike, and a test asserts every name in a 2,000-name index
+stays reachable.
+
+**Level of detail** is what changes with zoom. `viewAtScale()` keeps a group
+as one block until its children are worth telling apart, then dissolves it.
+The test is the *smallest* child, not the average — an average is passed by
+one giant sitting beside five specks, which was exactly the failing case.
+It also refuses to dissolve into slivers worse than `MAX_CHILD_ASPECT`,
+because area alone does not constrain shape: a 26×1 tile clears any area
+floor and is still a hairline.
+
+Because it is per node, a huge industry still shows its tickers at 1× while
+a small one stays a block. Hit testing runs against the same list the
+renderer draws, so a tap can never resolve to something the zoom is hiding.
+
+| 503 names | before | after |
+| --- | --- | --- |
+| Tiles drawn at 1× | 503 | 73 |
+| Under 2px | 25% | none, at any zoom |
+| Worst aspect ratio | 103:1 | 7.3:1 |
+| Labelled at 14× | 98% | 100% |
 
 ### Opening a ticker elsewhere
 
@@ -135,14 +168,16 @@ Expo Go, and the map shows a clear message instead of white-screening.
 ### Tests
 
 ```bash
-npm test           # 55 tests over the layout, colour and link logic
+npm test           # 79 tests over the layout, colour and link logic
 ```
 
 The treemap and colour modules are pure TypeScript with no React or native
 imports, which is why they are directly testable. Coverage includes area
 proportionality, non-overlap, containment, aspect-ratio quality,
-cap-weighted sector aggregation, hit testing, palette luminance parity, and
-per-destination symbol and exchange normalisation.
+cap-weighted sector aggregation, hit testing, palette luminance parity,
+per-destination symbol and exchange normalisation, and — across 99, 503 and
+2,000-name indices — that nothing is drawn under 2px, nothing exceeds 10:1,
+tiles never overlap, and every name stays reachable.
 
 ### Connecting real data
 
@@ -228,6 +263,7 @@ Not built yet, roughly in value order:
 
 - ETF, crypto and world universes — the adapter and picker already model
   them; each needs a constituent source wired into the worker
+- Skia `Atlas` rendering, needed above roughly 1,000 tiles
 - Price alerts (push via Expo Notifications, evaluated in the worker cron)
 - Broker deep links beyond the read-only destinations, which is also where
   affiliate revenue would sit — note that referral links need disclosure

@@ -17,8 +17,12 @@ import {
   runOnJS,
 } from 'react-native-reanimated';
 
-import type { Quote } from '../data/types';
-import { layoutMap, tileAt, type Tile } from '../treemap/buildTree';
+import {
+  layoutMap,
+  tileAtPoint,
+  viewAtScale,
+  type Tile,
+} from '../treemap/buildTree';
 import { performanceColor, labelColor, type Palette } from '../treemap/color';
 import { intersects, type Rect } from '../treemap/squarify';
 import { theme } from '../theme';
@@ -52,7 +56,8 @@ export interface TreemapCanvasProps {
   colorCap: number;
   snapColors: boolean;
   haptics: boolean;
-  onSelect: (quote: Quote) => void;
+  /** Receives whatever was tapped: a ticker, a "+N" fold, or a group block. */
+  onSelect: (tile: Tile) => void;
   /** Symbol to fly to, e.g. from search. */
   focusSymbol?: string;
 }
@@ -67,37 +72,25 @@ interface DrawTile {
   kind: Tile['kind'];
 }
 
-function flattenForDraw(
+function paint(
   tiles: Tile[],
   palette: Palette,
   colorCap: number,
   snapColors: boolean
-): { tickers: DrawTile[]; groups: Tile[] } {
-  const tickers: DrawTile[] = [];
-  const groups: Tile[] = [];
+): DrawTile[] {
+  const options = { cap: colorCap, palette, snap: snapColors };
 
-  const walk = (nodes: Tile[]) => {
-    for (const node of nodes) {
-      if (node.kind === 'ticker') {
-        const options = { cap: colorCap, palette, snap: snapColors };
-        tickers.push({
-          key: node.key,
-          rect: node.rect,
-          color: performanceColor(node.changePct, options),
-          labelColor: labelColor(node.changePct, options),
-          label: node.label,
-          detail: `${node.changePct >= 0 ? '+' : ''}${node.changePct.toFixed(2)}%`,
-          kind: node.kind,
-        });
-      } else {
-        groups.push(node);
-        if (node.children) walk(node.children);
-      }
-    }
-  };
-
-  walk(tiles);
-  return { tickers, groups };
+  return tiles.map((tile) => ({
+    key: tile.key,
+    rect: tile.rect,
+    color: performanceColor(tile.changePct, options),
+    labelColor: labelColor(tile.changePct, options),
+    // A dissolved group is labelled on its header strip; an undissolved one
+    // is a block and gets its name in the middle like any other tile.
+    label: tile.label,
+    detail: `${tile.changePct >= 0 ? '+' : ''}${tile.changePct.toFixed(2)}%`,
+    kind: tile.kind,
+  }));
 }
 
 export function TreemapCanvas({
@@ -117,9 +110,20 @@ export function TreemapCanvas({
     [quotes, width, height]
   );
 
-  const { tickers, groups } = useMemo(
-    () => flattenForDraw(tiles, palette, colorCap, snapColors),
-    [tiles, palette, colorCap, snapColors]
+  // Recomputing the level of detail on a raw float would thrash on every
+  // synced frame; bucketing to 5% steps keeps it to a handful of passes per
+  // gesture without any visible stepping.
+  const [viewScale, setViewScale] = React.useState(1);
+  const scaleBucket = Math.round(viewScale * 20) / 20;
+
+  const view = useMemo(
+    () => viewAtScale(tiles, scaleBucket),
+    [tiles, scaleBucket]
+  );
+
+  const painted = useMemo(
+    () => paint(view.drawn, palette, colorCap, snapColors),
+    [view, palette, colorCap, snapColors]
   );
 
   const scale = useSharedValue(1);
@@ -132,11 +136,11 @@ export function TreemapCanvas({
   const startY = useSharedValue(0);
 
   // Mirrors of the shared values for the JS-side render pass. Skia reads the
-  // shared values directly for the transform; these drive label culling and
-  // which tiles are rendered at all, so they have to track the gesture as it
-  // happens — syncing only on release means labels do not appear until you
-  // lift your fingers, and panning reveals empty space.
-  const [viewScale, setViewScale] = React.useState(1);
+  // shared values directly for the transform; these drive label culling, the
+  // level of detail, and which tiles are rendered at all, so they have to
+  // track the gesture as it happens — syncing only on release means labels
+  // do not appear until you lift your fingers, and panning reveals empty
+  // space.
   const [viewport, setViewport] = React.useState<Rect>({ x: 0, y: 0, w: width, h: height });
 
   // Last state pushed to the JS thread, so the worklet can decide whether a
@@ -261,13 +265,16 @@ export function TreemapCanvas({
       const worldX = (x - tx) / s;
       const worldY = (y - ty) / s;
 
-      const hit = tileAt(tiles, worldX, worldY);
-      if (!hit?.quote) return;
+      // Tested against exactly what is painted, so a tap can never resolve
+      // to something the level of detail is hiding. The tolerance rescues a
+      // tap that lands in the 1px gutter between two tiles.
+      const hit = tileAtPoint(view.drawn, worldX, worldY, s, 12);
+      if (!hit) return;
 
       if (haptics) void Haptics.selectionAsync();
-      onSelect(hit.quote);
+      onSelect(hit);
     },
-    [tiles, haptics, onSelect]
+    [view, haptics, onSelect]
   );
 
   const tap = useMemo(
@@ -323,7 +330,7 @@ export function TreemapCanvas({
   React.useEffect(() => {
     if (!focusSymbol) return;
 
-    const target = tickers.find((t) => t.key === focusSymbol.toUpperCase());
+    const target = painted.find((t) => t.key === focusSymbol.toUpperCase());
     if (!target) return;
 
     const { rect } = target;
@@ -340,7 +347,7 @@ export function TreemapCanvas({
     translateY.value = withTiming(height / 2 - cy * desired, { duration: 320 });
 
     forceSync(desired, width / 2 - cx * desired, height / 2 - cy * desired);
-  }, [focusSymbol, tickers, width, height, scale, translateX, translateY, forceSync]);
+  }, [focusSymbol, painted, width, height, scale, translateX, translateY, forceSync]);
 
   const transform = useDerivedValue(() => [
     { translateX: translateX.value },
@@ -367,13 +374,15 @@ export function TreemapCanvas({
 
   // Only draw what is on screen, and only label what is big enough to read.
   const visible = useMemo(
-    () => tickers.filter((t) => intersects(t.rect, viewport)),
-    [tickers, viewport]
+    () => painted.filter((t) => intersects(t.rect, viewport)),
+    [painted, viewport]
   );
 
+  // Headers belong to groups that dissolved; an undissolved group is a
+  // block and carries its label in the middle instead.
   const visibleGroups = useMemo(
-    () => groups.filter((g) => g.header && intersects(g.rect, viewport)),
-    [groups, viewport]
+    () => view.dissolved.filter((g) => g.header && intersects(g.rect, viewport)),
+    [view, viewport]
   );
 
   return (
@@ -502,6 +511,15 @@ function TileLabel({
 
   const showDetail = screenW >= MIN_DETAIL_PX && screenH >= 30 && detailFont;
 
+  // Group blocks carry an industry name rather than a four-letter symbol,
+  // so the label has to be trimmed to the tile it sits in. Measured in
+  // screen pixels because the label counter-scales with the zoom.
+  const text =
+    tile.kind === 'ticker' || tile.kind === 'aggregate'
+      ? tile.label
+      : truncateToWidth(tile.label, labelFont, screenW - 8);
+  if (!text) return null;
+
   const cx = tile.rect.x + tile.rect.w / 2;
   const cy = tile.rect.y + tile.rect.h / 2;
 
@@ -513,9 +531,9 @@ function TileLabel({
   return (
     <Group transform={[{ translateX: cx }, { translateY: cy }, { scale: inverse }]}>
       <SkText
-        x={-labelFont.measureText(tile.label).width / 2}
+        x={-labelFont.measureText(text).width / 2}
         y={showDetail ? -1 : 4}
-        text={tile.label}
+        text={text}
         font={labelFont}
         color={tile.labelColor}
       />

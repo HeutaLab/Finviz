@@ -15,9 +15,11 @@ import { Legend } from '../../src/components/Legend';
 import { MapHeader } from '../../src/components/MapHeader';
 import { TickerSheet } from '../../src/components/TickerSheet';
 import { TimeframeBar } from '../../src/components/TimeframeBar';
+import { GroupSheet } from '../../src/components/GroupSheet';
 import { useMarketData } from '../../src/data/MarketDataContext';
 import { isMockData } from '../../src/data/provider';
 import type { Quote } from '../../src/data/types';
+import { quotesIn, type Tile } from '../../src/treemap/buildTree';
 import { usePreferences } from '../../src/state/store';
 import { theme } from '../../src/theme';
 
@@ -41,7 +43,30 @@ export default function MapScreen() {
 
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [selected, setSelected] = useState<Quote>();
+  const [group, setGroup] = useState<{ title: string; quotes: Quote[] }>();
   const [focusSymbol, setFocusSymbol] = useState<string>();
+
+  // A tap resolves to whatever the map is currently showing: a single name
+  // opens the detail sheet, a "+N" fold or an undissolved block opens the
+  // list of what is inside it.
+  const onSelectTile = useCallback((tile: Tile) => {
+    if (tile.quote) {
+      setSelected(tile.quote);
+      return;
+    }
+
+    const quotes = quotesIn(tile);
+    if (quotes.length === 0) return;
+    if (quotes.length === 1) {
+      setSelected(quotes[0]);
+      return;
+    }
+
+    setGroup({
+      title: tile.kind === 'aggregate' ? 'Smaller names' : tile.label,
+      quotes,
+    });
+  }, []);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -106,7 +131,7 @@ export default function MapScreen() {
             snapColors={snapColors}
             haptics={haptics}
             focusSymbol={focusSymbol}
-            onSelect={setSelected}
+            onSelect={onSelectTile}
           />
         ) : null}
       </View>
@@ -130,6 +155,16 @@ export default function MapScreen() {
         quote={selected}
         timeframe={timeframe}
         onClose={() => setSelected(undefined)}
+      />
+
+      <GroupSheet
+        title={group?.title}
+        quotes={group?.quotes}
+        onClose={() => setGroup(undefined)}
+        onPick={(quote) => {
+          setGroup(undefined);
+          setSelected(quote);
+        }}
       />
     </View>
   );
