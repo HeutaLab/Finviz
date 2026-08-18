@@ -3,19 +3,17 @@ import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useEntitlement } from '../../src/billing/entitlement';
-import { useMarketMap } from '../../src/data/useMarketMap';
+import { useMarketData } from '../../src/data/MarketDataContext';
 import { usePreferences } from '../../src/state/store';
 import { performanceColor } from '../../src/treemap/color';
 import { theme } from '../../src/theme';
 
 export default function WatchlistScreen() {
   const insets = useSafeAreaInsets();
-  const { isPro } = useEntitlement();
   const { universe, timeframe, watchlist, palette, colorCap, snapColors, toggleWatch } =
     usePreferences();
 
-  const { snapshot } = useMarketMap({ universe, timeframe, isPro });
+  const { snapshot } = useMarketData();
 
   const rows = useMemo(() => {
     const bySymbol = new Map(snapshot?.quotes.map((q) => [q.symbol, q]) ?? []);

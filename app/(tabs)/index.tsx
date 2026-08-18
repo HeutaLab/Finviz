@@ -15,9 +15,9 @@ import { Legend } from '../../src/components/Legend';
 import { MapHeader } from '../../src/components/MapHeader';
 import { TickerSheet } from '../../src/components/TickerSheet';
 import { TimeframeBar } from '../../src/components/TimeframeBar';
+import { useMarketData } from '../../src/data/MarketDataContext';
 import { isMockData } from '../../src/data/provider';
 import type { Quote } from '../../src/data/types';
-import { useMarketMap } from '../../src/data/useMarketMap';
 import { usePreferences } from '../../src/state/store';
 import { theme } from '../../src/theme';
 
@@ -37,11 +37,7 @@ export default function MapScreen() {
     setTimeframe,
   } = usePreferences();
 
-  const { snapshot, loading, error, stale, refresh } = useMarketMap({
-    universe,
-    timeframe,
-    isPro,
-  });
+  const { snapshot, loading, error, stale, refresh } = useMarketData();
 
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [selected, setSelected] = useState<Quote>();

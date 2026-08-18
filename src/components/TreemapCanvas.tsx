@@ -132,15 +132,68 @@ export function TreemapCanvas({
   const startY = useSharedValue(0);
 
   // Mirrors of the shared values for the JS-side render pass. Skia reads the
-  // shared values directly for the transform; these drive label culling,
-  // which only needs to update when a gesture settles.
+  // shared values directly for the transform; these drive label culling and
+  // which tiles are rendered at all, so they have to track the gesture as it
+  // happens — syncing only on release means labels do not appear until you
+  // lift your fingers, and panning reveals empty space.
   const [viewScale, setViewScale] = React.useState(1);
   const [viewport, setViewport] = React.useState<Rect>({ x: 0, y: 0, w: width, h: height });
 
-  const syncView = useCallback((s: number, tx: number, ty: number) => {
-    setViewScale(s);
-    setViewport({ x: -tx / s, y: -ty / s, w: width / s, h: height / s });
-  }, [width, height]);
+  // Last state pushed to the JS thread, so the worklet can decide whether a
+  // frame has moved enough to be worth re-culling.
+  const syncedScale = useSharedValue(1);
+  const syncedX = useSharedValue(0);
+  const syncedY = useSharedValue(0);
+
+  const syncView = useCallback(
+    (s: number, tx: number, ty: number) => {
+      setViewScale(s);
+      // Overscan by a quarter-screen so tiles are already mounted by the time
+      // they slide into view, rather than popping in at the edge.
+      const w = width / s;
+      const h = height / s;
+      setViewport({
+        x: -tx / s - w * 0.25,
+        y: -ty / s - h * 0.25,
+        w: w * 1.5,
+        h: h * 1.5,
+      });
+    },
+    [width, height]
+  );
+
+  /**
+   * Pushes the view to the JS thread, but only once it has changed enough to
+   * matter. Re-culling every frame would run a full-tree filter at 60fps;
+   * these thresholds keep it to a handful of passes per gesture while still
+   * revealing labels mid-pinch.
+   */
+  const maybeSync = useCallback(() => {
+    'worklet';
+    const scaleDelta =
+      Math.abs(scale.value - syncedScale.value) / Math.max(syncedScale.value, 0.001);
+    const moved =
+      Math.abs(translateX.value - syncedX.value) +
+      Math.abs(translateY.value - syncedY.value);
+
+    if (scaleDelta > 0.08 || moved > 56) {
+      syncedScale.value = scale.value;
+      syncedX.value = translateX.value;
+      syncedY.value = translateY.value;
+      runOnJS(syncView)(scale.value, translateX.value, translateY.value);
+    }
+  }, [syncView, scale, translateX, translateY, syncedScale, syncedX, syncedY]);
+
+  /** Unconditional push, for gesture end and programmatic moves. */
+  const forceSync = useCallback(
+    (s: number, tx: number, ty: number) => {
+      syncedScale.value = s;
+      syncedX.value = tx;
+      syncedY.value = ty;
+      syncView(s, tx, ty);
+    },
+    [syncView, syncedScale, syncedX, syncedY]
+  );
 
   /** Keeps the map from being dragged off-screen entirely. */
   const clamp = useCallback(() => {
@@ -166,11 +219,12 @@ export function TreemapCanvas({
           translateX.value = startX.value + event.translationX;
           translateY.value = startY.value + event.translationY;
           clamp();
+          maybeSync();
         })
         .onEnd(() => {
-          runOnJS(syncView)(scale.value, translateX.value, translateY.value);
+          runOnJS(forceSync)(scale.value, translateX.value, translateY.value);
         }),
-    [clamp, syncView, scale, startX, startY, translateX, translateY]
+    [clamp, maybeSync, forceSync, scale, startX, startY, translateX, translateY]
   );
 
   const pinch = useMemo(
@@ -193,11 +247,12 @@ export function TreemapCanvas({
           translateY.value = event.focalY - (event.focalY - startY.value) * ratio;
           scale.value = next;
           clamp();
+          maybeSync();
         })
         .onEnd(() => {
-          runOnJS(syncView)(scale.value, translateX.value, translateY.value);
+          runOnJS(forceSync)(scale.value, translateX.value, translateY.value);
         }),
-    [clamp, syncView, scale, startScale, startX, startY, translateX, translateY]
+    [clamp, maybeSync, forceSync, scale, startScale, startX, startY, translateX, translateY]
   );
 
   const handleTap = useCallback(
@@ -250,9 +305,9 @@ export function TreemapCanvas({
             { duration: 220 }
           );
 
-          runOnJS(syncView)(target, translateX.value, translateY.value);
+          runOnJS(forceSync)(target, translateX.value, translateY.value);
         }),
-    [syncView, scale, translateX, translateY]
+    [forceSync, scale, translateX, translateY]
   );
 
   const gesture = useMemo(
@@ -284,8 +339,8 @@ export function TreemapCanvas({
     translateX.value = withTiming(width / 2 - cx * desired, { duration: 320 });
     translateY.value = withTiming(height / 2 - cy * desired, { duration: 320 });
 
-    syncView(desired, width / 2 - cx * desired, height / 2 - cy * desired);
-  }, [focusSymbol, tickers, width, height, scale, translateX, translateY, syncView]);
+    forceSync(desired, width / 2 - cx * desired, height / 2 - cy * desired);
+  }, [focusSymbol, tickers, width, height, scale, translateX, translateY, forceSync]);
 
   const transform = useDerivedValue(() => [
     { translateX: translateX.value },
